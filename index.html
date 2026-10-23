@@ -1,0 +1,980 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Partner MRR – OND planning</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #faf9f5; --color-bg: #f3f1ea; --color-panel: #ffffff; --color-fg: #1f1e1b; --color-fg-muted: #6b6a64;
+    --color-border-line: #e3e0d6; --color-ok: #2f7d4f; --color-bad: #b4442f; --color-warn: #a46a12;
+    --font-anthropic-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-anthropic-serif: Georgia, "Times New Roman", serif;
+    --cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 16px; --cds-gap-lg: 28px;
+    --cds-pad-xs: 4px; --cds-pad-sm: 8px; --cds-pad-md: 14px; --cds-pad-lg: 20px;
+    --cds-radius: 12px; --cds-font-size-title: 1.6rem; --cds-font-size-heading: 1rem; --cds-font-size-body: .95rem; --cds-font-size-caption: .8rem;
+    --cds-font-weight-medium: 600; --cds-dur-slow: .4s; --cds-dur-fast: .15s;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { color-scheme: dark; --bg: #1b1a18; --color-bg: #24231f; --color-panel: #262522; --color-fg: #ecebe6; --color-fg-muted: #a3a19a;
+      --color-border-line: #3a3833; --color-ok: #6cc08c; --color-bad: #ef8a74; --color-warn: #e0ad5a; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--color-fg); font-family: var(--font-anthropic-sans); }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 24px clamp(12px, 3vw, 32px) 48px; }
+  .dash-skeleton { color: transparent !important; background: linear-gradient(90deg, var(--color-border-line), var(--color-bg), var(--color-border-line)); background-size: 200% 100%; animation: sk 1.2s infinite; border-radius: 6px; min-width: 3ch; display: inline-block; }
+  @keyframes sk { to { background-position: -200% 0; } }
+  .load-errors { background: var(--color-panel); border: 1px solid var(--color-bad); color: var(--color-bad); border-radius: var(--cds-radius); padding: var(--cds-pad-md); margin-bottom: var(--cds-gap-md); font-size: var(--cds-font-size-caption); }
+  .load-errors p { margin: 0 0 4px; }
+  .foot { margin-top: var(--cds-gap-lg); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+
+  .mrr { font-family: var(--font-anthropic-sans); display: flex; flex-direction: column; gap: var(--cds-gap-lg); }
+  .mrr-head h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; }
+  .mrr-head p { margin: var(--cds-gap-xs) 0 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-body); }
+  .mrr-head b { font-weight: var(--cds-font-weight-medium); color: var(--color-fg); }
+  .mrr-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: var(--cds-gap-md); }
+  .mrr-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); display: flex; flex-direction: column; gap: var(--cds-gap-sm); min-height: 10rem; }
+  .mrr-card h2 { margin: 0; font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); }
+  .mrr-win { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .mrr-val { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: calc(var(--cds-font-size-title) * 1.5); font-variant-numeric: tabular-nums; line-height: 1.1; margin-top: auto; }
+  .mrr-sub { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); font-variant-numeric: tabular-nums; }
+  .mrr-up { color: var(--color-ok); }
+  .mrr-down { color: var(--color-bad); }
+  .mrr-note { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: 0; }
+  .mrr-fail { display: flex; align-items: center; gap: var(--cds-gap-xs); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .mrr-fail::before { content: ""; width: .375rem; height: .375rem; border-radius: 50%; background: var(--color-bad); }
+  .mrr [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
+  .mrr [data-dash-source-state=empty] { color: transparent; }
+  .mrr-sec h2.mrr-sech { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; }
+  .mrr-sec > p { margin: var(--cds-gap-xs) 0 var(--cds-gap-md); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .mrr-mini { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); gap: var(--cds-gap-md); margin-bottom: var(--cds-gap-md); }
+  .mrr-mini .mrr-card { min-height: 0; padding: var(--cds-pad-md); }
+  .mrr-mini .mrr-val { font-size: var(--cds-font-size-title); }
+  .mrr-chips { display: flex; flex-wrap: wrap; gap: var(--cds-gap-xs); margin-bottom: var(--cds-gap-sm); }
+  .mrr-chips button { font: inherit; font-size: var(--cds-font-size-caption); padding: var(--cds-pad-xs) var(--cds-pad-sm); border-radius: 999px; border: 1px solid var(--color-border-line); background: var(--color-panel); color: var(--color-fg); cursor: pointer; }
+  .mrr-chips button[aria-pressed=true] { background: var(--color-fg); color: var(--color-bg); border-color: var(--color-fg); }
+  .mrr-tbox { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); max-height: 36rem; overflow: auto; }
+  .mrr-tbl { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-caption); }
+  .mrr-tbl th { position: sticky; top: 0; background: var(--color-panel); text-align: left; font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); padding: var(--cds-pad-sm); border-bottom: 1px solid var(--color-border-line); white-space: nowrap; z-index: 1; }
+  .mrr-tbl td { padding: var(--cds-pad-sm); border-bottom: 1px solid var(--color-border-line); vertical-align: top; }
+  .mrr-tbl td.num, .mrr-tbl th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .mrr-tbl td.txt { min-width: 16rem; max-width: 28rem; }
+  .mrr-tbl td.name { font-weight: var(--cds-font-weight-medium); white-space: nowrap; }
+  .mrr-line { display: block; }
+  .mrr-line + .mrr-line { margin-top: var(--cds-gap-xs); }
+  .mrr-tag { display: inline-block; font-size: .7rem; font-weight: var(--cds-font-weight-medium); padding: 0 .4em; border-radius: 4px; margin-right: .4em; border: 1px solid currentColor; }
+  .mrr-tag.b { color: var(--color-bad); }
+  .mrr-tag.l { color: var(--color-ok); }
+  .mrr-yes { color: var(--color-ok); font-weight: var(--cds-font-weight-medium); }
+  .mrr-muted { color: var(--color-fg-muted); }
+  .mrr-tbl tr.mrr-hide { display: none; }
+  .mrr-grid5 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: var(--cds-gap-md); }
+  .mrr-grid5 .mrr-val { font-size: var(--cds-font-size-title); }
+  .mrr-card.mrr-accent { border-color: var(--color-fg-muted); }
+  .mrr-tools { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; margin-bottom: var(--cds-gap-sm); }
+  .mrr-tools .mrr-chips { margin-bottom: 0; }
+  .mrr-search { font: inherit; font-size: var(--cds-font-size-caption); padding: var(--cds-pad-xs) var(--cds-pad-sm); border: 1px solid var(--color-border-line); border-radius: 999px; background: var(--color-panel); color: var(--color-fg); min-width: 12rem; flex: 1 1 12rem; max-width: 20rem; }
+  .mrr-sep { width: 1px; align-self: stretch; background: var(--color-border-line); }
+  .mrr-pill { display: inline-block; font-size: .7rem; font-weight: var(--cds-font-weight-medium); padding: .05em .45em; border-radius: 4px; border: 1px solid currentColor; white-space: nowrap; }
+  .mrr-pill.p-High { color: var(--color-ok); }
+  .mrr-pill.p-Medium { color: var(--color-warn); }
+  .mrr-pill.p-Base { color: var(--color-fg); }
+  .mrr-pill.p-Not { color: var(--color-fg-muted); }
+  .mrr-sub2 { display: block; color: var(--color-fg-muted); font-weight: 400; white-space: normal; max-width: 22rem; margin-top: 2px; }
+  .mrr-tag2 { display: inline-block; font-size: .7rem; padding: 0 .4em; margin: 0 .25em .25em 0; border-radius: 4px; background: var(--color-bg); border: 1px solid var(--color-border-line); white-space: nowrap; }
+  .mrr-tag2.sv { border-color: var(--color-ok); color: var(--color-ok); }
+  .mrr-warn { color: var(--color-warn); display: block; margin-top: 2px; }
+  .mrr-tbl td.mid { min-width: 9rem; }
+  .mrr-bar { display: block; height: 4px; border-radius: 2px; background: var(--color-border-line); margin-top: 4px; min-width: 6rem; }
+  .mrr-bar > i { display: block; height: 100%; border-radius: 2px; background: var(--color-ok); }
+  .mrr-card[data-drill] { cursor: pointer; transition: border-color var(--cds-dur-fast, .15s), box-shadow var(--cds-dur-fast, .15s); position: relative; }
+  .mrr-card[data-drill]:hover { border-color: var(--color-fg-muted); }
+  .mrr-card[data-drill]:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
+  .mrr-card[data-drill][aria-expanded=true] { border-color: var(--color-fg); box-shadow: inset 0 -3px 0 var(--color-fg); }
+  .mrr-more { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-top: var(--cds-gap-xs); }
+  .mrr-card[aria-expanded=true] .mrr-more { color: var(--color-fg); }
+  .mrr-drill { margin: var(--cds-gap-md) 0; }
+  .mrr-drill-head { display: flex; align-items: baseline; gap: var(--cds-gap-sm); margin-bottom: var(--cds-gap-sm); }
+  .mrr-drill-head h3 { margin: 0; font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); }
+  .mrr-drill-head span { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .mrr-drill-head button { margin-left: auto; font: inherit; font-size: var(--cds-font-size-caption); background: none; border: 1px solid var(--color-border-line); color: var(--color-fg); border-radius: 999px; padding: var(--cds-pad-xs) var(--cds-pad-sm); cursor: pointer; }
+  .mrr-drill .mrr-tbox { max-height: 26rem; }
+  .mrr-tbl tfoot td { font-weight: var(--cds-font-weight-medium); border-top: 1px solid var(--color-border-line); position: sticky; bottom: 0; background: var(--color-panel); }
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="load-errors" id="load-errors" hidden></div>
+
+
+<div class="mrr">
+  <header class="mrr-head" id="summary">
+    <h1>Partner MRR – OND planning</h1>
+    <p>October is forecast at <b class="dash-skeleton" data-source="mrr_summary" data-field="oct_predicted" data-row="0">—</b>, <b class="dash-skeleton" data-source="mrr_summary" data-field="oct_vs_sep" data-row="0">—</b> on September, an ARR implication of <b class="dash-skeleton" data-source="mrr_summary" data-field="arr_impact" data-row="0">—</b> at today’s run rate.</p>
+  </header>
+
+  <section class="mrr-grid5" id="kpis">
+    <article class="mrr-card" id="avg3" data-drill="avg3" data-panel="drill-kpis">
+      <h2>Last 3-month average MRR</h2>
+      <span class="mrr-win">Jul–Sep 2026, total across partners ÷ 3</span>
+      <div class="mrr-val dash-skeleton" data-source="mrr_summary" data-field="avg_3mo" data-row="0">—</div>
+      <div class="mrr-sub">Jul <span data-source="mrr_summary" data-field="jul" data-row="0">—</span> · Aug <span data-source="mrr_summary" data-field="aug" data-row="0">—</span> · Sep <span data-source="mrr_summary" data-field="sep" data-row="0">—</span></div>
+    </article>
+    <article class="mrr-card" id="lastmonth" data-drill="lastmonth" data-panel="drill-kpis">
+      <h2>Last month MRR</h2>
+      <span class="mrr-win">September 2026</span>
+      <div class="mrr-val dash-skeleton" data-source="mrr_summary" data-field="sep" data-row="0">—</div>
+      <div class="mrr-sub"><span data-source="mrr_summary" data-field="sep_vs_aug" data-row="0">—</span> vs August</div>
+    </article>
+    <article class="mrr-card" id="octpred" data-drill="octpred" data-panel="drill-kpis">
+      <h2>October predicted MRR</h2>
+      <span class="mrr-win">October 2026, forecast in the sheet</span>
+      <div class="mrr-val dash-skeleton" data-source="mrr_summary" data-field="oct_predicted" data-row="0">—</div>
+      <div class="mrr-sub"><span data-source="mrr_summary" data-field="oct_vs_sep" data-row="0">—</span> vs September</div>
+    </article>
+    <article class="mrr-card mrr-accent" id="mrrdelta" data-drill="mrrdelta" data-panel="drill-kpis">
+      <h2>MRR delta</h2>
+      <span class="mrr-win">October forecast minus September</span>
+      <div class="mrr-val dash-skeleton" data-source="mrr_summary" data-field="mrr_delta" data-row="0">—</div>
+      <div class="mrr-sub">Sep vs Aug: <span data-source="mrr_summary" data-field="mrr_delta_prev" data-row="0">—</span></div>
+    </article>
+    <article class="mrr-card mrr-accent" id="arrimpact" data-drill="arrimpact" data-panel="drill-kpis">
+      <h2>ARR implication</h2>
+      <span class="mrr-win">MRR delta × 12</span>
+      <div class="mrr-val dash-skeleton" data-source="mrr_summary" data-field="arr_impact" data-row="0">—</div>
+      <div class="mrr-sub">October run-rate ARR: <span data-source="mrr_summary" data-field="oct_run_rate_arr" data-row="0">—</span></div>
+    </article>
+  </section>
+  <div class="mrr-drill" id="drill-kpis" hidden></div>
+
+  <section class="mrr-sec" id="partners">
+    <h2 class="mrr-sech">All partners</h2>
+    <p>Zone, business model and products live come from the RAG Dashboard tab. Smartview VDP agent (a widget on the inventory thumbnail plus a sales inbound agent that books the appointment or enquiry against that vehicle) is in scope for every client on Studio or with a marketing offering: High where they run dealer websites, Medium where they sell marketing or feed dealer sites, Base for Studio only. Sales outbound and acquisition agents are listed once per client; 360 and video upsells only where Studio is live without them. Rooftop numbers come live from the Partner Data sheet; pending rooftops are an estimate.</p>
+    <div class="mrr-mini">
+      <div data-drill="partners" data-panel="drill-partners" class="mrr-card"><span class="mrr-win">Partners (clients)</span><div class="mrr-val dash-skeleton" data-source="partner_counts" data-field="partners" data-row="0">—</div><span class="mrr-win">AMER <span data-source="partner_counts" data-field="amer" data-row="0">—</span> · EMEA/APAC <span data-source="partner_counts" data-field="emea" data-row="0">—</span></span></div>
+      <div data-drill="models" data-panel="drill-partners" class="mrr-card"><span class="mrr-win">Subscription / usage</span><div class="mrr-val"><span class="dash-skeleton" data-source="partner_counts" data-field="subscription" data-row="0">—</span> / <span class="dash-skeleton" data-source="partner_counts" data-field="usage" data-row="0">—</span></div><span class="mrr-win">Usage includes PayG</span></div>
+      <div data-drill="svscope" data-panel="drill-partners" class="mrr-card"><span class="mrr-win">Clients in scope for Smartview VDP agent</span><div class="mrr-val dash-skeleton" data-source="partner_counts" data-field="sv_scope" data-row="0">—</div><span class="mrr-win">High <span data-source="partner_counts" data-field="sv_high" data-row="0">—</span> · Medium <span data-source="partner_counts" data-field="sv_medium" data-row="0">—</span> · Base <span data-source="partner_counts" data-field="sv_base" data-row="0">—</span></span></div>
+      <div data-drill="upsell" data-panel="drill-partners" class="mrr-card"><span class="mrr-win">Studio upsell rows</span><div class="mrr-val"><span class="dash-skeleton" data-source="partner_counts" data-field="upsell_360" data-row="0">—</span> / <span class="dash-skeleton" data-source="partner_counts" data-field="upsell_video" data-row="0">—</span></div><span class="mrr-win">360 not live / video not live</span></div>
+      <div data-drill="svhighmrr" data-panel="drill-partners" class="mrr-card"><span class="mrr-win">Oct MRR on high-priority accounts</span><div class="mrr-val dash-skeleton" data-source="partner_counts" data-field="sv_high_oct_mrr" data-row="0">—</div><span class="mrr-win">October forecast</span></div>
+    </div>
+    <div class="mrr-drill" id="drill-partners" hidden></div>
+    <div class="mrr-mini" id="rooftop-kpis">
+      <div data-drill="rtpen" data-panel="drill-rooftops" class="mrr-card"><span class="mrr-win">Rooftop penetration</span><div class="mrr-val dash-skeleton" data-source="partner_counts" data-field="rooftop_penetration" data-row="0">—</div><span class="mrr-win">Onboarded ÷ total, across <span data-source="partner_counts" data-field="rooftop_partners" data-row="0">—</span> partners with rooftop numbers</span></div>
+      <div data-drill="rton" data-panel="drill-rooftops" class="mrr-card"><span class="mrr-win">Rooftops onboarded</span><div class="mrr-val dash-skeleton" data-source="partner_counts" data-field="rooftops_onboarded" data-row="0">—</div><span class="mrr-win">of <span data-source="partner_counts" data-field="rooftops_total" data-row="0">—</span> total (approximate)</span></div>
+      <div data-drill="rtpend" data-panel="drill-rooftops" class="mrr-card mrr-accent"><span class="mrr-win">Pending rooftops (estimate)</span><div class="mrr-val dash-skeleton" data-source="partner_counts" data-field="rooftops_pending" data-row="0">—</div><span class="mrr-win">Rooftop expansion headroom inside existing partners</span></div>
+    </div>
+    <div class="mrr-drill" id="drill-rooftops" hidden></div>
+    <div class="mrr-tools">
+      <div class="mrr-chips" role="group" aria-label="Zone" data-group="zone">
+        <button type="button" data-v="" aria-pressed="true">All zones</button>
+        <button type="button" data-v="AMER" aria-pressed="false">AMER</button>
+        <button type="button" data-v="EMEA/APAC" aria-pressed="false">EMEA/APAC</button>
+      </div>
+      <span class="mrr-sep"></span>
+      <div class="mrr-chips" role="group" aria-label="Business model" data-group="model">
+        <button type="button" data-v="" aria-pressed="true">All models</button>
+        <button type="button" data-v="Subscription" aria-pressed="false">Subscription</button>
+        <button type="button" data-v="Usage" aria-pressed="false">Usage</button>
+      </div>
+      <span class="mrr-sep"></span>
+      <div class="mrr-chips" role="group" aria-label="Smartview" data-group="sv">
+        <button type="button" data-v="" aria-pressed="true">Any priority</button>
+        <button type="button" data-v="High" aria-pressed="false">Smartview high</button>
+        <button type="button" data-v="Medium" aria-pressed="false">Medium</button>
+      </div>
+      <span class="mrr-sep"></span>
+      <div class="mrr-chips" role="group" aria-label="Sort" data-group="sort">
+        <button type="button" data-v="" aria-pressed="true">Sort: Smartview priority</button>
+        <button type="button" data-v="pending" aria-pressed="false">Most pending rooftops</button>
+        <button type="button" data-v="pen" aria-pressed="false">Lowest penetration</button>
+      </div>
+      <input class="mrr-search" type="search" placeholder="Search partners" aria-label="Search partners">
+    </div>
+    <div class="mrr-tbox" id="partners-table">
+      <table class="mrr-tbl" data-source="partner_master" data-row-key="partner">
+        <thead><tr>
+          <th data-field="partner">Partner</th>
+          <th data-field="zone">Zone</th>
+          <th data-field="business_model">Model</th>
+          <th data-field="live_products">Live products</th>
+          <th class="num" data-field="oct_predicted">Oct MRR</th>
+          <th class="num" data-field="mrr_delta">Δ vs Sep</th>
+          <th class="num" data-field="rooftop_penetration">Rooftop penetration</th>
+          <th data-field="partner_offers">Partner offers</th>
+          <th data-field="smartview_priority">Smartview</th>
+          <th data-field="open_scope">Open cross-sell scope</th>
+          <th data-field="sheet_remark">Sheet’s expansion note</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mrr-sec" id="actions">
+    <h2 class="mrr-sech">Blockers, levers and cross-sell</h2>
+    <p>What is holding back or lifting October revenue, partner by partner, from the sheet’s Blockers/Levers and Expansion columns.</p>
+    <div class="mrr-mini">
+      <div data-drill="blocker" data-panel="drill-actions" class="mrr-card"><span class="mrr-win">Partners with a blocker</span><div class="mrr-val dash-skeleton" data-source="action_counts" data-field="with_blocker" data-row="0">—</div></div>
+      <div data-drill="lever" data-panel="drill-actions" class="mrr-card"><span class="mrr-win">Partners with a lever</span><div class="mrr-val dash-skeleton" data-source="action_counts" data-field="with_lever" data-row="0">—</div></div>
+      <div data-drill="expansion" data-panel="drill-actions" class="mrr-card"><span class="mrr-win">Cross-sell / expansion opportunities</span><div class="mrr-val dash-skeleton" data-source="action_counts" data-field="expansion_yes" data-row="0">—</div></div>
+      <div data-drill="expmrr" data-panel="drill-actions" class="mrr-card"><span class="mrr-win">October MRR on those accounts</span><div class="mrr-val dash-skeleton" data-source="action_counts" data-field="expansion_oct_mrr" data-row="0">—</div></div>
+    </div>
+    <div class="mrr-drill" id="drill-actions" hidden></div>
+    <div class="mrr-chips" role="group" aria-label="Show">
+      <button type="button" data-f="all" aria-pressed="true">All partners</button>
+      <button type="button" data-f="blocker" aria-pressed="false">Has a blocker</button>
+      <button type="button" data-f="lever" aria-pressed="false">Has a lever</button>
+      <button type="button" data-f="exp" aria-pressed="false">Cross-sell opportunity</button>
+    </div>
+    <div class="mrr-tbox" id="actions-table">
+      <table class="mrr-tbl" data-source="partner_actions" data-row-key="partner">
+        <thead><tr>
+          <th data-field="partner">Partner</th>
+          <th class="num" data-field="oct_predicted">Oct predicted</th>
+          <th class="num" data-field="oct_vs_sep">vs Sep</th>
+          <th data-field="blockers_levers">Blockers / levers</th>
+          <th data-field="expansion">Opportunity</th>
+          <th data-field="cross_sell">Cross-sell / expansion</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="mrr-note" id="note">Sum of <span data-source="mrr_summary" data-field="partners" data-row="0">—</span> partner rows in the OND Planning Draft tab. Blank cells count as $0.</p>
+</div>
+
+
+<p class="foot"><span id="loaded-at">Loading…</span> · Data from the published Google Sheets; refresh the page to reload. Website research is a snapshot from Oct 23, 2026.</p>
+</div>
+<script>
+  // ---- settings: paste your published CSV links here ----
+  const RAG_GID = '135115178'; // e.g. '123456789'
+  const CONFIG = {
+    // Partner Arali RAG Dashboard → tab "OND Planning Draft" (File → Share → Publish to web → that tab → CSV)
+    ond_sheet: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRjdPbiRpCK5C5ooUbsqv_ApLGqmWrCXVKtxErUYGkBA-f-RovHbXEPvONMDD5HuXCVs0UNNyJAqJmC/pub?output=csv',
+    // Partner Arali RAG Dashboard → tab "RAG Dashboard". Open the sheet, click the RAG Dashboard tab and copy the number after "#gid=" in the address bar into RAG_GID below.
+    rag_sheet: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRjdPbiRpCK5C5ooUbsqv_ApLGqmWrCXVKtxErUYGkBA-f-RovHbXEPvONMDD5HuXCVs0UNNyJAqJmC/pub?gid=' + RAG_GID + '&single=true&output=csv',
+    // Partner Data (AMER + EMEA) → tab "A"
+    rooftops: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTeoPZZDQPJg9y8hHfkKcDjTDpe6xUXGgkaOSbYQC8r8ZPhx6q-5oG4cwzHJUgjFiI8QNqQPbIsA0pA/pub?output=csv',
+  };
+  const SOURCE_NAMES = { ond_sheet: 'OND Planning Draft tab', rag_sheet: 'RAG Dashboard tab', rooftops: 'Partner Data tab A' };
+
+  // ---- partner website research (snapshot, Oct 23 2026) ----
+  const PARTNER_RESEARCH = [{"partner": "Autopix", "website": "autopix.no", "what_they_do": "Norwegian phone app for AI car photo backgrounds; publishes images into dealer systems.", "website_services": "No", "smartview_priority": "Low", "research_status": "Checked"}, {"partner": "Think C", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "Vivition", "website": "—", "what_they_do": "Automotive photography and image-optimisation software (since 2017); integrates with stock tools such as CarCollect.", "website_services": "No", "smartview_priority": "Low", "research_status": "Checked"}, {"partner": "Digiflow", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "Everyday", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}, {"partner": "Inmersiva", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "Scaleo", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "Autokuva", "website": "spinio.fi (possible)", "what_they_do": "Possibly Spinio (Finland): automated photo studios for car retailers, images sent to dealer systems via API. The sheet’s “Joel” matches Spinio’s CFO; confirm with the KAM.", "website_services": "No", "smartview_priority": "Low", "research_status": "Checked – likely match"}, {"partner": "Autoload", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "Dealcar", "website": "—", "what_they_do": "Madrid-based all-in-one SaaS for used-car dealers (stock, CRM, portal distribution). Own dealer websites not confirmed.", "website_services": "Unclear", "smartview_priority": "Medium", "research_status": "Checked"}, {"partner": "Carlens 360", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "Vehixpro", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}, {"partner": "Clarvio", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}, {"partner": "Eastern Digital LLC", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "Metadome", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}, {"partner": "Carlover", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}, {"partner": "Call Source", "website": "callsource.com", "what_they_do": "Call tracking and virtual BDC for dealers; its automotive division was acquired by CallRevu.", "website_services": "No", "smartview_priority": "Low", "research_status": "Checked"}, {"partner": "35 inch", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}, {"partner": "Teton Solutions Group", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "Dealer Vision", "website": "dealervision.com", "what_they_do": "Photo and walkaround-video merchandising platform; adds video to dealer VDPs (Dealer.com, Dealer eProcess integrations).", "website_services": "VDP plug-in", "smartview_priority": "Medium", "research_status": "Checked"}, {"partner": "Pro-Motion Pix", "website": "promotionpix.com", "what_they_do": "Full-service on-lot photography, 360 spins, background replacement, window stickers, data polling (vAuto, AAX, FirstLook). The Partner Data sheet also lists dealer websites among its offerings.", "website_services": "Yes – dealer websites (per Partner Data sheet)", "smartview_priority": "High", "research_status": "Checked + Partner Data sheet"}, {"partner": "Foto-Ops", "website": "foto-ops.com", "what_they_do": "Pro-MotionPix’s self-serve photo and 360 capture app; exports photos and data to dealer websites and third-party sites.", "website_services": "Exports to dealer sites", "smartview_priority": "Low", "research_status": "Checked + Partner Data sheet"}, {"partner": "Dealer Specialties LLC", "website": "dealerspecialties.com", "what_they_do": "Inventory data and photo collection, window labels and listing distribution to dealer sites and portals.", "website_services": "Feeds dealer sites", "smartview_priority": "Medium", "research_status": "Checked"}, {"partner": "Automotive Marketing Solution", "website": "—", "what_they_do": "Dealership marketing: photos, HD video, social media, inventory feed management (sheet notes identification not fully confirmed).", "website_services": "Feeds dealer sites", "smartview_priority": "Medium", "research_status": "Partner Data sheet"}, {"partner": "Elite Auto Marketing Solutions", "website": "—", "what_they_do": "Vehicle photography, digital advertising and video marketing for dealerships.", "website_services": "No", "smartview_priority": "Low", "research_status": "Partner Data sheet"}, {"partner": "EDealer Inc", "website": "edealer.ca", "what_they_do": "Dealer website provider; certified website vendor for GM Canada and Stellantis Canada; also SEO/SEM.", "website_services": "Yes – builds dealer websites", "smartview_priority": "High", "research_status": "Checked"}, {"partner": "Rim Revolution LLC", "website": "rimrevolution.com", "what_they_do": "Recon services: rim repair and painting, paint correction, ceramic coating, tint, vinyl wrap.", "website_services": "No", "smartview_priority": "Low", "research_status": "Partner Data sheet"}, {"partner": "Megadealer", "website": "megadealer.com.br", "what_they_do": "Brazilian company per the Partner Data sheet website; offerings not filled in.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Website from Partner Data sheet"}, {"partner": "Median Media LLC", "website": "median-media.com", "what_they_do": "Photography and refurbishment services for dealers.", "website_services": "No", "smartview_priority": "Low", "research_status": "Partner Data sheet"}, {"partner": "Mobials Inc.", "website": "autoverify.com", "what_they_do": "AutoVerify suite of conversion tools that sit on dealer websites (trade-in, pre-qualify, test drive, e-commerce, reviews).", "website_services": "Yes – website plug-ins", "smartview_priority": "High", "research_status": "Checked"}, {"partner": "Aecsolutions", "website": "aecsolutions.com", "what_they_do": "Website per Partner Data sheet; offerings not filled in.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Website from Partner Data sheet"}, {"partner": "Pixel Cars", "website": "—", "what_they_do": "Small independent photography provider (1 rooftop).", "website_services": "No", "smartview_priority": "Low", "research_status": "Partner Data sheet"}, {"partner": "Yoga cars", "website": "—", "what_they_do": "Small independent photography provider (1 rooftop).", "website_services": "No", "smartview_priority": "Low", "research_status": "Partner Data sheet"}, {"partner": "Netlook", "website": "netlook.com", "what_they_do": "Inventory merchandising; its VehicleTell photo/video/360 player is embedded in dealer websites (BuiltWith lists ~1,800 live sites).", "website_services": "Yes – VDP media player", "smartview_priority": "High", "research_status": "Checked"}, {"partner": "Smartlot", "website": "smartlot.com", "what_they_do": "Website per Partner Data sheet; offerings not filled in, and several companies use this name.", "website_services": "Unclear", "smartview_priority": "Unknown", "research_status": "Checked – unclear"}, {"partner": "Vincue_Benjamin", "website": "vincue.com", "what_they_do": "Inventory lifecycle platform for dealers that also builds dealer websites and runs VIN-level advertising.", "website_services": "Yes – builds dealer websites", "smartview_priority": "High", "research_status": "Checked"}, {"partner": "Vincue_Merchandising", "website": "vincue.com", "what_they_do": "Same company as Vincue_Benjamin (VINCUE): inventory platform plus dealer websites.", "website_services": "Yes – builds dealer websites", "smartview_priority": "High", "research_status": "Checked"}, {"partner": "Topster Ltda.", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}, {"partner": "Zipbid", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "360 Cars Chile SpA", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}, {"partner": "PILOT AI TECNOLOGIA LTDA", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}, {"partner": "Dealer Shock Inc", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "Frontline Photography", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}];
+
+  // ---- tiny runtime: loaders, calcs, onData ----
+  const parseCsv = (text) => {
+    const rows = []; let row = [], cell = '', q = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) { if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
+      else if (c === '"') q = true;
+      else if (c === ',') { row.push(cell); cell = ''; }
+      else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+      else cell += c;
+    }
+    if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+    return rows;
+  };
+  const REG = { calc: {}, loader: {} }, STATE = {}, LISTENERS = [];
+  window.dash = {
+    calc: (n, o) => { REG.calc[n] = o; },
+    loader: (n, o) => { REG.loader[n] = o; },
+    onData: (f) => { LISTENERS.push(f); },
+    data: (n) => STATE[n] || { status: 'loading' },
+  };
+
+  dash.calc('mrr_summary', {
+    inputs: ['ond_sheet'],
+    title: 'MRR summary',
+    description: 'Monthly totals across partners, the Jul–Sep average, month-on-month MRR delta and its ARR implication (× 12).',
+    fn: (ond_sheet) => {
+      const sum = (k) => ond_sheet.reduce((t, r) => t + (r[k] || 0), 0);
+      const jul = sum('jul_mrr'), aug = sum('aug_mrr'), sep = sum('sep_mrr'), oct = sum('oct_predicted');
+      const avg = (jul + aug + sep) / 3;
+      const chg = (a, b) => (b ? a / b - 1 : null);
+      return [{
+        partners: ond_sheet.length, jul, aug, sep,
+        avg_3mo: avg, oct_predicted: oct,
+        sep_vs_aug: chg(sep, aug), oct_vs_sep: chg(oct, sep),
+        mrr_delta: oct - sep, mrr_delta_prev: sep - aug,
+        arr_impact: (oct - sep) * 12, oct_run_rate_arr: oct * 12,
+      }];
+    },
+  });
+
+  dash.calc('mrr_by_partner', {
+    inputs: ['ond_sheet'],
+    title: 'MRR by partner',
+    description: 'Per partner: Jul–Sep MRR and their average, October forecast, MRR delta (Oct − Sep, and Sep − Aug) and the ARR implication (× 12).',
+    fn: (ond_sheet) => ond_sheet.map((r) => {
+      const jul = r.jul_mrr || 0, aug = r.aug_mrr || 0, sep = r.sep_mrr || 0, oct = r.oct_predicted || 0;
+      return {
+        partner: r.partner, region: r.region,
+        jul_mrr: jul, aug_mrr: aug, sep_mrr: sep, avg_3mo: (jul + aug + sep) / 3, oct_predicted: oct,
+        mrr_delta: oct - sep, sep_vs_aug_delta: sep - aug,
+        arr_impact: (oct - sep) * 12, oct_run_rate_arr: oct * 12,
+      };
+    }),
+  });
+
+  dash.loader('ond_sheet', {
+    description: 'Decodes the CSV export of the first tab and keeps one row per partner, with revenue cells as numbers.',
+    fn: ({ answer }) => {
+      let a = answer;
+      if (Array.isArray(a) && a[0] && typeof a[0].text === 'string') a = a[0].text;
+      if (typeof a === 'string') { try { a = JSON.parse(a); } catch (e) { throw new Error(a.slice(0, 200)); } }
+      if (!a || typeof a.content !== 'string') throw new Error('No file content in the answer (keys: ' + Object.keys(a || {}).join(', ') + ')');
+      const bin = atob(a.content);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const text = new TextDecoder('utf-8').decode(bytes);
+
+      const rows = []; let row = [], cell = '', q = false;
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (q) {
+          if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; }
+          else cell += c;
+        } else if (c === '"') q = true;
+        else if (c === ',') { row.push(cell); cell = ''; }
+        else if (c === '\n' || c === '\r') {
+          if (c === '\r' && text[i + 1] === '\n') i++;
+          row.push(cell); rows.push(row); row = []; cell = '';
+        } else cell += c;
+      }
+      if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+
+      const head = rows[0].map((h) => h.trim());
+      const find = (test, label) => {
+        const i = head.findIndex(test);
+        if (i < 0) throw new Error('Column not found in the sheet: ' + label);
+        return i;
+      };
+      const iSr = find((h) => h === 'Sr No', 'Sr No');
+      const iName = find((h) => h === 'Partners', 'Partners');
+      const iRegion = find((h) => h === 'Region', 'Region');
+      const iBill = find((h) => h === 'Billing Type', 'Billing Type');
+      const iJul = find((h) => h.includes('(July)'), 'Revenue M-2 (July)');
+      const iAug = find((h) => h.includes('(August)'), 'Revenue Last Month (August)');
+      const iSep = find((h) => h.includes('(September)'), 'Previous Month (September)');
+      const iOct = find((h) => h === 'Oct', 'Oct');
+      const iBL = find((h) => h === 'Blockers/Levers', 'Blockers/Levers');
+      const iCross = find((h) => h === 'Cross sell Product', 'Cross sell Product');
+      const iExp = find((h) => h.startsWith('Expansion Oppurtunity (Yes'), 'Expansion Oppurtunity (Yes/No)');
+      const iExpR = find((h) => h.startsWith('Expansion Oppurtunity (Remarks'), 'Expansion Oppurtunity (Remarks)');
+      const money = (s) => {
+        const t = (s || '').trim();
+        if (!t || t === '-') return null;
+        const n = Number(t.replace(/[$,\s]/g, ''));
+        return Number.isFinite(n) ? n : null;
+      };
+      const out = rows.slice(1)
+        .filter((r) => /^\d+$/.test((r[iSr] || '').trim()) && (r[iName] || '').trim())
+        .map((r) => ({
+          sr_no: Number(r[iSr]),
+          partner: r[iName].trim(),
+          region: (r[iRegion] || '').trim(),
+          billing_type: (r[iBill] || '').trim(),
+          jul_mrr: money(r[iJul]),
+          aug_mrr: money(r[iAug]),
+          sep_mrr: money(r[iSep]),
+          oct_predicted: money(r[iOct]),
+          blockers_levers: (r[iBL] || '').trim(),
+          cross_sell_product: (r[iCross] || '').trim(),
+          expansion_opportunity: (r[iExp] || '').trim(),
+          expansion_remarks: (r[iExpR] || '').trim(),
+        }));
+      return {
+        columns: ['sr_no', 'partner', 'region', 'billing_type', 'jul_mrr', 'aug_mrr', 'sep_mrr', 'oct_predicted', 'blockers_levers', 'cross_sell_product', 'expansion_opportunity', 'expansion_remarks'],
+        rows: out,
+        meta: [{ label: 'File', value: a.title || '' }],
+      };
+    },
+  });
+
+  dash.loader('rag_sheet', {
+    description: 'RAG Dashboard tab (published CSV).',
+    fn: ({ text }) => {
+      const grid = parseCsv(text);
+      const hi = grid.findIndex((r) => r.some((h) => (h || '').trim() === 'Partners'));
+      if (hi < 0) throw new Error('This CSV has no “Partners” column — check it is the RAG Dashboard tab');
+      const head = grid[hi].map((h) => (h || '').trim());
+      const find = (test, label) => { const i = head.findIndex(test); if (i < 0) throw new Error('Column not found on RAG Dashboard: ' + label); return i; };
+      const c = {
+        partner: find((h) => h === 'Partners', 'Partners'), region: find((h) => h === 'Region', 'Region'),
+        billing: find((h) => h === 'Billing Type', 'Billing Type'), product: find((h) => h === 'Product', 'Product'),
+        images: find((h) => h === 'Images', 'Images'), spin: find((h) => h === '360' || Number(h) === 360, '360'), video: find((h) => h === 'Video', 'Video'),
+        live: find((h) => h === 'Products Live', 'Products Live'),
+        exp: find((h) => h.startsWith('Expansion Oppurtunity (Yes'), 'Expansion Oppurtunity (Yes/No)'),
+        expR: find((h) => h.startsWith('Expansion Oppurtunity (Remarks'), 'Expansion Oppurtunity (Remarks)'),
+        billed: find((h) => h === 'Billed On', 'Billed On'), usage: find((h) => h.startsWith('Last 3-Month Avg Usage'), 'Last 3-Month Avg Usage'),
+      };
+      const flag = (x) => { const v = String(x || '').trim().toUpperCase(); return v === 'TRUE' || v === 'YES' || Number(v) === 1; };
+      const numv = (x) => { const t = String(x || '').replace(/[$,\s]/g, ''); return t !== '' && Number.isFinite(Number(t)) ? Number(t) : null; };
+      const seen = new Set(), rows = [];
+      grid.slice(hi + 1).forEach((g) => {
+        const name = (g[c.partner] || '').trim(), region = (g[c.region] || '').trim();
+        if (!name || !region || seen.has(name)) return;
+        seen.add(name);
+        rows.push({
+          partner: name, zone: region, billing_type: (g[c.billing] || '').trim(), product: (g[c.product] || '').trim(),
+          images_live: flag(g[c.images]), spin360_live: flag(g[c.spin]), video_live: flag(g[c.video]), products_live: numv(g[c.live]),
+          expansion_opportunity: (g[c.exp] || '').trim(), expansion_remarks: (g[c.expR] || '').trim(),
+          billed_on: (g[c.billed] || '').trim(), avg_monthly_usage: numv(g[c.usage]),
+        });
+      });
+      return { rows };
+    },
+  });
+
+  dash.loader('rooftops', {
+    description: 'Decodes the CSV export of tab A and keeps one row per partner: total, onboarded and pending rooftops as numbers (text such as “Only QC” kept as a note), the Yes/No offering columns, and a Total VINs column if one is added.',
+    fn: ({ answer }) => {
+      let a = answer;
+      if (Array.isArray(a) && a[0] && typeof a[0].text === 'string') a = a[0].text;
+      if (typeof a === 'string') { try { a = JSON.parse(a); } catch (e) { throw new Error(a.slice(0, 200)); } }
+      if (!a || typeof a.content !== 'string') throw new Error('No file content in the answer (keys: ' + Object.keys(a || {}).join(', ') + ')');
+      const bin = atob(a.content);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const text = new TextDecoder('utf-8').decode(bytes);
+      const rows = []; let row = [], cell = '', q = false;
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (q) { if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
+        else if (c === '"') q = true;
+        else if (c === ',') { row.push(cell); cell = ''; }
+        else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+        else cell += c;
+      }
+      if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+      const head = rows[0].map((h) => h.trim());
+      const find = (test, label) => { const i = head.findIndex(test); if (i < 0) throw new Error('Column not found in Partner Data: ' + label); return i; };
+      const iName = find((h) => h === 'Partner Name', 'Partner Name');
+      const iWeb = find((h) => h === 'Website', 'Website');
+      const iTot = find((h) => h.startsWith('Total Rooftops'), 'Total Rooftops');
+      const iOn = find((h) => h.startsWith('Rooftop onboarded'), 'Rooftop onboarded');
+      const iPend = find((h) => h.startsWith('Pending rooftop'), 'Pending rooftop');
+      const opt = (test) => head.findIndex(test);
+      const off = {
+        dms: opt((h) => h === 'DMS Offering'), ims: opt((h) => h === 'IMS Offering'), marketing: opt((h) => h === 'Marketing Offering'),
+        photography: opt((h) => h === 'Photography Offering'), refurbishment: opt((h) => h === 'Refurbishment Offering'), ai_chat: opt((h) => h === 'AI/Chat Offering'),
+      };
+      const iVin = opt((h) => /total\s*vins?/i.test(h));
+      const yes = (r, i) => i >= 0 && /^y(es)?$/i.test((r[i] || '').trim());
+      const num = (s) => { const t = (s || '').trim().replace(/,/g, ''); const m = t.match(/^(\d+(?:\.\d+)?)\+?$/); return m ? Number(m[1]) : null; };
+      const out = rows.slice(1).filter((r) => (r[iName] || '').trim()).map((r) => {
+        const raw = [r[iTot], r[iOn], r[iPend]].map((x) => (x || '').trim());
+        const textNote = raw.filter((x) => x && num(x) == null).join(' / ');
+        return {
+          partner: r[iName].trim(),
+          website: (r[iWeb] || '').trim(),
+          total_rooftops: num(r[iTot]),
+          onboarded_rooftops: num(r[iOn]),
+          pending_rooftops: num(r[iPend]),
+          pending_is_minimum: /\+\s*$/.test(raw[2]),
+          note: textNote,
+          offers_dms: yes(r, off.dms), offers_ims: yes(r, off.ims), offers_marketing: yes(r, off.marketing),
+          offers_photography: yes(r, off.photography), offers_refurbishment: yes(r, off.refurbishment), offers_ai_chat: yes(r, off.ai_chat),
+          total_vins: iVin >= 0 ? num(r[iVin]) : null,
+        };
+      });
+      return {
+        columns: ['partner', 'website', 'total_rooftops', 'onboarded_rooftops', 'pending_rooftops', 'pending_is_minimum', 'note', 'offers_dms', 'offers_ims', 'offers_marketing', 'offers_photography', 'offers_refurbishment', 'offers_ai_chat', 'total_vins'],
+        rows: out,
+        meta: [{ label: 'File', value: a.title || '' }, { label: 'Tab', value: 'A (first tab)' }],
+      };
+    },
+  });
+
+  dash.calc('partner_master', {
+    inputs: ['rag_sheet', 'ond_sheet', 'partner_research', 'rooftops'],
+    title: 'Partner list with cross-sell scope',
+    description: 'RAG Dashboard partners joined to October MRR, Partner Data rooftops and offerings, and website research. Smartview VDP agent is in scope for any client on Studio or with a marketing offering (High = they run dealer websites, Medium = marketing or website-adjacent, Base = Studio only). Client-level agents (Smartview, sales outbound, acquisition) are listed once per client; 360 and video upsells only on Studio rows where not live.',
+    fn: (rag_sheet, ond_sheet, partner_research, rooftops) => {
+      const ond = new Map(ond_sheet.map((r) => [r.partner, r]));
+      const norm = (x) => String(x || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const alias = { aecsolution: 'aecsolutions' };
+      const rt = new Map(rooftops.map((r) => { const k = norm(r.partner); return [alias[k] || k, r]; }));
+      const res = new Map(partner_research.map((r) => [r.partner, r]));
+      const rank = { High: 0, Medium: 1, Base: 2, 'Not in scope': 3 };
+      const clientOf = (name) => name.split('_')[0].trim();
+      const rtOf = (name) => rt.get(norm(name)) || {};
+      const clientRows = new Map();
+      rag_sheet.forEach((r) => { const k = clientOf(r.partner); clientRows.set(k, [...(clientRows.get(k) || []), r]); });
+      const anchor = new Map([...clientRows].map(([k, rs]) => [k, rs.find((r) => /vini/i.test(r.product)) || rs[0]]));
+      return rag_sheet.map((r) => {
+        const client = clientOf(r.partner);
+        const rs = clientRows.get(client);
+        const isAnchor = anchor.get(client).partner === r.partner;
+        const o = ond.get(r.partner) || {};
+        const w = res.get(r.partner) || {};
+        const t = rtOf(r.partner);
+        const studio = /studio/i.test(r.product);
+        const vini = /vini/i.test(r.product);
+        const clientStudio = rs.some((x) => /studio/i.test(x.product));
+        const clientMarketing = rs.some((x) => rtOf(x.partner).offers_marketing);
+        const clientWeb = rs.some((x) => /^(yes|vdp|feeds|exports)/i.test((res.get(x.partner) || {}).website_services || ''));
+        const clientWebHigh = rs.some((x) => (res.get(x.partner) || {}).smartview_priority === 'High');
+        const svScope = clientStudio || clientMarketing;
+        const pr = !svScope ? 'Not in scope' : clientWebHigh ? 'High' : (clientMarketing || clientWeb) ? 'Medium' : 'Base';
+        const bundle = !svScope ? '' : clientWebHigh || clientWeb ? 'their dealer websites / VDPs' : clientMarketing ? 'their marketing offering' : 'Studio merchandising';
+        const live = [r.images_live && 'Images', r.spin360_live && '360 spin', r.video_live && 'Video', vini && 'Vini AI'].filter(Boolean);
+        const open = [
+          isAnchor && svScope && 'Smartview VDP agent',
+          isAnchor && 'Sales outbound agent',
+          isAnchor && 'Acquisition agent (inbound / outbound)',
+          studio && !r.spin360_live && '360 upsell',
+          studio && !r.video_live && 'Video upsell',
+        ].filter(Boolean);
+        const remark = r.expansion_remarks === '-' ? '' : r.expansion_remarks;
+        const pitched = [/image/i.test(remark) && 'Images', /360/.test(remark) && '360 spin', /video/i.test(remark) && 'Video', /vini/i.test(remark) && 'Vini AI'].filter(Boolean);
+        const offers = [
+          /^yes/i.test(w.website_services || '') && 'Websites',
+          t.offers_marketing && 'Marketing', t.offers_ims && 'IMS', t.offers_dms && 'DMS',
+          t.offers_photography && 'Photography', t.offers_refurbishment && 'Recon', t.offers_ai_chat && 'AI / chat',
+        ].filter(Boolean);
+        const totalGiven = t.total_rooftops != null;
+        const total = totalGiven ? t.total_rooftops : (t.onboarded_rooftops != null && t.pending_rooftops != null ? t.onboarded_rooftops + t.pending_rooftops : null);
+        const vinBilled = /vin/i.test(r.billed_on);
+        return {
+          partner: r.partner,
+          client,
+          zone: r.zone,
+          billing_type: r.billing_type,
+          business_model: /subscription/i.test(r.billing_type) ? 'Subscription' : 'Usage',
+          product: r.product,
+          live_products: live.join(', '),
+          oct_predicted: o.oct_predicted ?? null,
+          mrr_delta: o.oct_predicted != null && o.sep_mrr != null ? o.oct_predicted - o.sep_mrr : null,
+          website: w.website || '',
+          what_they_do: w.what_they_do || '',
+          website_services: w.website_services || 'Unknown',
+          partner_offers: offers.join(', '),
+          research_status: w.research_status || 'Not checked',
+          smartview_scope: isAnchor && svScope,
+          client_smartview_priority: pr,
+          smartview_priority: isAnchor ? pr : 'Same client',
+          smartview_on: isAnchor ? '' : anchor.get(client).partner,
+          smartview_bundle: isAnchor ? bundle : '',
+          priority_rank: rank[pr] ?? 3,
+          open_scope: open.join(', '),
+          sheet_remark: remark,
+          remark_already_live: pitched.filter((p) => live.includes(p)).join(', '),
+          total_rooftops: total,
+          total_rooftops_derived: total != null && !totalGiven,
+          onboarded_rooftops: t.onboarded_rooftops ?? null,
+          pending_rooftops: t.pending_rooftops ?? null,
+          pending_is_minimum: !!t.pending_is_minimum,
+          rooftop_penetration: total && t.onboarded_rooftops != null ? t.onboarded_rooftops / total : null,
+          rooftops_pending_est: total != null && t.onboarded_rooftops != null ? total - t.onboarded_rooftops : null,
+          rooftop_note: t.partner ? (t.note || '') : 'Not in Partner Data sheet',
+          billed_on: r.billed_on,
+          avg_monthly_vins: vinBilled ? r.avg_monthly_usage : null,
+          total_vins: t.total_vins ?? null,
+          vin_penetration: vinBilled && t.total_vins && r.avg_monthly_usage != null ? r.avg_monthly_usage / t.total_vins : null,
+        };
+      });
+    },
+  });
+
+  dash.calc('partner_counts', {
+    inputs: ['partner_master'],
+    title: 'Partner counts',
+    description: 'Distinct clients (Vincue counted once) by zone, business model and Smartview priority, October MRR on high-priority accounts, and rooftop penetration across partners with rooftop numbers.',
+    fn: (partner_master) => {
+      const n = (f) => new Set(partner_master.filter(f).map((r) => r.client)).size;
+      const rt = partner_master.filter((r) => r.total_rooftops != null && r.onboarded_rooftops != null);
+      return [{
+        partners: new Set(partner_master.map((r) => r.client)).size,
+        amer: n((r) => r.zone === 'AMER'),
+        emea: n((r) => r.zone === 'EMEA/APAC'),
+        subscription: n((r) => r.business_model === 'Subscription'),
+        usage: n((r) => r.business_model === 'Usage'),
+        sv_scope: n((r) => r.client_smartview_priority !== 'Not in scope'),
+        sv_high: n((r) => r.client_smartview_priority === 'High'),
+        sv_medium: n((r) => r.client_smartview_priority === 'Medium'),
+        sv_base: n((r) => r.client_smartview_priority === 'Base'),
+        upsell_360: partner_master.filter((r) => /360 upsell/.test(r.open_scope)).length,
+        upsell_video: partner_master.filter((r) => /Video upsell/.test(r.open_scope)).length,
+        sv_high_oct_mrr: partner_master.filter((r) => r.client_smartview_priority === 'High').reduce((t, r) => t + (r.oct_predicted || 0), 0),
+        rooftops_total: rt.reduce((t, r) => t + r.total_rooftops, 0),
+        rooftops_onboarded: rt.reduce((t, r) => t + r.onboarded_rooftops, 0),
+        rooftops_pending: rt.reduce((t, r) => t + r.total_rooftops - r.onboarded_rooftops, 0),
+        rooftop_penetration: rt.length ? rt.reduce((t, r) => t + r.onboarded_rooftops, 0) / rt.reduce((t, r) => t + r.total_rooftops, 0) : null,
+        rooftop_partners: rt.length,
+      }];
+    },
+  });
+
+  dash.calc('partner_actions', {
+    inputs: ['ond_sheet'],
+    title: 'Partner blockers and cross-sell',
+    description: 'One row per partner: October forecast, change on September, blockers/levers text and cross-sell opportunity.',
+    fn: (ond_sheet) => ond_sheet.map((r) => {
+      const bl = r.blockers_levers === '-' ? '' : r.blockers_levers;
+      const cross = [r.cross_sell_product, r.expansion_remarks].filter((x) => x && x !== '-' && x !== '—').join(' · ');
+      return {
+        partner: r.partner,
+        oct_predicted: r.oct_predicted,
+        oct_vs_sep: r.sep_mrr ? (r.oct_predicted || 0) / r.sep_mrr - 1 : null,
+        blockers_levers: bl,
+        has_blocker: /blocker\s*:/i.test(bl),
+        has_lever: /(lever|potential opp)\s*:/i.test(bl),
+        expansion: /^yes$/i.test(r.expansion_opportunity) ? 'Yes' : /^no$/i.test(r.expansion_opportunity) ? 'No' : '',
+        cross_sell: cross,
+      };
+    }),
+  });
+
+  dash.calc('action_counts', {
+    inputs: ['partner_actions'],
+    title: 'Blocker and opportunity counts',
+    description: 'Partners tagged with a blocker, a lever, or a cross-sell opportunity, and the October MRR of the opportunity accounts.',
+    fn: (partner_actions) => {
+      const exp = partner_actions.filter((r) => r.expansion === 'Yes');
+      return [{
+        with_blocker: partner_actions.filter((r) => r.has_blocker).length,
+        with_lever: partner_actions.filter((r) => r.has_lever).length,
+        expansion_yes: exp.length,
+        expansion_oct_mrr: exp.reduce((t, r) => t + (r.oct_predicted || 0), 0),
+      }];
+    },
+  });
+
+  const usd = d3.format('$,.0f');
+  const pct = (v) => (v == null ? '—' : (v >= 0 ? '+' : '−') + d3.format('.1%')(Math.abs(v)));
+  const marks = document.querySelectorAll('.mrr [data-source="mrr_summary"]');
+  const pmarks = document.querySelectorAll('.mrr [data-source="partner_counts"]');
+  const ptbody = document.querySelector('#partners-table tbody');
+  const pfilt = { zone: '', model: '', sv: '', sort: '', q: '' };
+  const pkeep = (r) => (!pfilt.zone || r.zone === pfilt.zone) && (!pfilt.model || r.business_model === pfilt.model) && (!pfilt.sv || r.smartview_priority === pfilt.sv)
+    && (!pfilt.q || (r.partner + ' ' + r.what_they_do + ' ' + r.open_scope + ' ' + r.sheet_remark).toLowerCase().includes(pfilt.q));
+  const papply = () => {
+    document.querySelectorAll('#partners .mrr-chips').forEach((g) => g.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === pfilt[g.dataset.group]))));
+    ptbody.querySelectorAll('tr[data-key]').forEach((tr) => tr.classList.toggle('mrr-hide', !pkeep(tr.__row)));
+  };
+  document.querySelectorAll('#partners .mrr-chips').forEach((g) => g.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    pfilt[g.dataset.group] = b.dataset.v;
+    if (g.dataset.group === 'sort') drawPartners(); else papply();
+  }));
+  document.querySelector('#partners .mrr-search').addEventListener('input', (e) => { pfilt.q = e.target.value.trim().toLowerCase(); papply(); });
+  const signedUsd = (v) => (v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + usd(Math.abs(v)));
+  const drawPartners = () => {
+    const t = dash.data('partner_master');
+    ptbody.replaceChildren();
+    if (t.status !== 'ok') {
+      const tr = ptbody.insertRow(); const td = tr.insertCell(); td.colSpan = 11;
+      if (t.status === 'error') { td.className = 'mrr-fail'; td.textContent = 'Failed to load'; } else td.className = 'dash-skeleton';
+      return;
+    }
+    const pend = (r) => (r.total_rooftops != null && r.onboarded_rooftops != null ? r.total_rooftops - r.onboarded_rooftops : -1);
+    const pen = (r) => (r.rooftop_penetration == null ? 2 : r.rooftop_penetration);
+    const rows = [...t.data].sort(pfilt.sort === 'pending' ? (a, b) => pend(b) - pend(a)
+      : pfilt.sort === 'pen' ? (a, b) => pen(a) - pen(b) || pend(b) - pend(a)
+      : (a, b) => a.priority_rank - b.priority_rank || (b.oct_predicted || 0) - (a.oct_predicted || 0));
+    rows.forEach((r) => {
+      const tr = ptbody.insertRow(); tr.__row = r; tr.dataset.key = r.partner;
+      const c = () => tr.insertCell();
+      const n = c(); n.className = 'name';
+      n.append(document.createTextNode(r.partner));
+      if (r.website || r.what_they_do) {
+        const sub = document.createElement('span'); sub.className = 'mrr-sub2';
+        sub.textContent = [r.website && r.website !== '—' ? r.website : '', r.what_they_do].filter(Boolean).join(' — ');
+        n.append(sub);
+      }
+      const z = c(); z.textContent = r.zone;
+      const m = c(); m.textContent = r.business_model; if (r.billing_type && r.billing_type !== r.business_model) { const s2 = document.createElement('span'); s2.className = 'mrr-sub2'; s2.textContent = r.billing_type; m.append(s2); }
+      const l = c(); l.className = 'mid'; l.textContent = r.live_products || '—'; if (!r.live_products) l.classList.add('mrr-muted');
+      const o = c(); o.className = 'num'; o.textContent = r.oct_predicted == null ? '—' : usd(r.oct_predicted);
+      const d = c(); d.className = 'num'; d.textContent = signedUsd(r.mrr_delta);
+      if (r.mrr_delta) d.classList.add(r.mrr_delta > 0 ? 'mrr-up' : 'mrr-down');
+      const rp = c(); rp.className = 'num mid';
+      if (r.rooftop_penetration != null) {
+        rp.append(document.createTextNode(d3.format('.0%')(r.rooftop_penetration)));
+        const s4 = document.createElement('span'); s4.className = 'mrr-sub2';
+        s4.textContent = d3.format(',')(r.onboarded_rooftops) + ' of ' + d3.format(',')(r.total_rooftops) + (r.total_rooftops_derived ? ' (total = onboarded + pending)' : '')
+          + ' · ' + d3.format(',')(r.total_rooftops - r.onboarded_rooftops) + (r.pending_is_minimum ? '+' : '') + ' pending (est.)';
+        const bar = document.createElement('span'); bar.className = 'mrr-bar'; const fill = document.createElement('i'); fill.style.width = Math.min(100, r.rooftop_penetration * 100) + '%'; bar.append(fill);
+        rp.append(s4, bar);
+        if (r.vin_penetration != null) { const s7 = document.createElement('span'); s7.className = 'mrr-sub2'; s7.textContent = 'VIN level ' + d3.format('.0%')(r.vin_penetration) + ' (' + d3.format(',')(Math.round(r.avg_monthly_vins)) + ' of ' + d3.format(',')(r.total_vins) + ' VINs/mo)'; rp.append(s7); }
+      } else { rp.textContent = '—'; rp.classList.add('mrr-muted'); if (r.rooftop_note) { const s5 = document.createElement('span'); s5.className = 'mrr-sub2'; s5.textContent = r.rooftop_note; rp.append(s5); } }
+      const w = c(); w.className = 'mid';
+      (r.partner_offers ? r.partner_offers.split(', ') : []).forEach((x) => { const tg = document.createElement('span'); tg.className = 'mrr-tag2'; tg.textContent = x; w.append(tg); });
+      if (!r.partner_offers) { w.textContent = '—'; w.classList.add('mrr-muted'); const s3 = document.createElement('span'); s3.className = 'mrr-sub2'; s3.textContent = r.rooftop_note === 'Not in Partner Data sheet' ? 'Not in Partner Data sheet' : r.research_status; w.append(s3); }
+      const p = c();
+      if (r.smartview_on) { p.className = 'mrr-muted'; p.textContent = 'Same client'; const s6 = document.createElement('span'); s6.className = 'mrr-sub2'; s6.textContent = 'Smartview counted on ' + r.smartview_on; p.append(s6); }
+      else { const pill = document.createElement('span'); pill.className = 'mrr-pill p-' + r.smartview_priority.split(' ')[0]; pill.textContent = r.smartview_priority; p.append(pill); }
+      const sc = c(); sc.className = 'txt';
+      (r.open_scope ? r.open_scope.split(', ') : []).forEach((x) => { const tg = document.createElement('span'); tg.className = 'mrr-tag2' + (x.startsWith('Smartview') ? ' sv' : ''); tg.textContent = x; sc.append(tg); });
+      if (!r.open_scope) { sc.textContent = '—'; sc.classList.add('mrr-muted'); }
+      if (r.smartview_bundle) { const b2 = document.createElement('span'); b2.className = 'mrr-sub2'; b2.textContent = 'Smartview: VDP widget + sales inbound agent, bundled with ' + r.smartview_bundle; sc.append(b2); }
+      const rm = c(); rm.className = 'txt'; rm.textContent = r.sheet_remark || '—'; if (!r.sheet_remark) rm.classList.add('mrr-muted');
+      if (r.remark_already_live) { const wn = document.createElement('span'); wn.className = 'mrr-warn'; wn.textContent = 'Already live: ' + r.remark_already_live + ' (pitch as more usage, not new product)'; rm.append(wn); }
+    });
+    papply();
+  };
+  const fillMarks = (els, id, fmt) => {
+    const s = dash.data(id);
+    const r = s.status === 'ok' && s.data && s.data[0];
+    els.forEach((el) => {
+      el.classList.remove('mrr-up', 'mrr-down', 'mrr-fail');
+      if (!r) {
+        el.textContent = '—';
+        if (s.status === 'error') { el.classList.remove('dash-skeleton'); el.classList.add('mrr-fail'); el.textContent = 'Failed to load'; }
+        else el.classList.add('dash-skeleton');
+        return;
+      }
+      el.classList.remove('dash-skeleton');
+      fmt(el, r[el.dataset.field], el.dataset.field);
+    });
+  };
+  const cmarks = document.querySelectorAll('.mrr [data-source="action_counts"]');
+  const tbody = document.querySelector('#actions-table tbody');
+  const chips = document.querySelectorAll('.mrr-chips button');
+  let view = 'all';
+  const keep = (r) => view === 'all' || (view === 'blocker' && r.has_blocker) || (view === 'lever' && r.has_lever) || (view === 'exp' && r.expansion === 'Yes');
+  const applyView = () => {
+    chips.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.f === view)));
+    tbody.querySelectorAll('tr[data-key]').forEach((tr) => tr.classList.toggle('mrr-hide', !keep(tr.__row)));
+  };
+  chips.forEach((b) => b.addEventListener('click', () => { view = b.dataset.f; applyView(); }));
+
+  const blText = (td, text) => {
+    td.replaceChildren();
+    if (!text) { td.textContent = '—'; td.classList.add('mrr-muted'); return; }
+    td.classList.remove('mrr-muted');
+    text.split(/\n+/).map((x) => x.replace(/^[•\-\s]+/, '').trim()).filter(Boolean).forEach((line) => {
+      const span = document.createElement('span');
+      span.className = 'mrr-line';
+      const m = line.match(/^(blocker|lever|potential opp)\s*:\s*/i);
+      if (m) {
+        const tag = document.createElement('span');
+        const isB = /blocker/i.test(m[1]);
+        tag.className = 'mrr-tag ' + (isB ? 'b' : 'l');
+        tag.textContent = isB ? 'Blocker' : 'Lever';
+        span.append(tag, document.createTextNode(line.slice(m[0].length)));
+      } else span.textContent = line;
+      td.append(span);
+    });
+  };
+
+  const drawTable = () => {
+    const t = dash.data('partner_actions');
+    tbody.replaceChildren();
+    if (t.status !== 'ok') {
+      const tr = tbody.insertRow(); const td = tr.insertCell(); td.colSpan = 6;
+      if (t.status === 'error') { td.className = 'mrr-fail'; td.textContent = 'Failed to load'; }
+      else td.className = 'dash-skeleton';
+      return;
+    }
+    const rows = [...t.data].sort((a, b) => (b.oct_predicted || 0) - (a.oct_predicted || 0));
+    rows.forEach((r) => {
+      const tr = tbody.insertRow();
+      tr.__row = r;
+      tr.dataset.key = r.partner;
+      const c = () => tr.insertCell();
+      const n = c(); n.className = 'name'; n.textContent = r.partner;
+      const o = c(); o.className = 'num'; o.textContent = r.oct_predicted == null ? '—' : usd(r.oct_predicted);
+      const d = c(); d.className = 'num';
+      d.textContent = pct(r.oct_vs_sep);
+      if (r.oct_vs_sep != null && Math.abs(r.oct_vs_sep) > 0.0005) d.classList.add(r.oct_vs_sep > 0 ? 'mrr-up' : 'mrr-down');
+      const b = c(); b.className = 'txt'; blText(b, r.blockers_levers);
+      const e = c(); e.textContent = r.expansion || '—'; e.className = r.expansion === 'Yes' ? 'mrr-yes' : 'mrr-muted';
+      const x = c(); x.className = 'txt'; x.textContent = r.cross_sell || '—'; if (!r.cross_sell) x.classList.add('mrr-muted');
+    });
+    applyView();
+  };
+
+
+  const DRILL = {
+    avg3: { src: 'mrr_by_partner', title: 'Last 3-month average MRR by partner', sort: (a, b) => b.avg_3mo - a.avg_3mo, total: ['jul_mrr', 'aug_mrr', 'sep_mrr', 'avg_3mo'],
+      cols: [['partner', 'Partner'], ['region', 'Zone'], ['jul_mrr', 'Jul', 'usd'], ['aug_mrr', 'Aug', 'usd'], ['sep_mrr', 'Sep', 'usd'], ['avg_3mo', '3-mo avg', 'usd']] },
+    lastmonth: { src: 'mrr_by_partner', title: 'September MRR by partner', sort: (a, b) => b.sep_mrr - a.sep_mrr, total: ['aug_mrr', 'sep_mrr', 'sep_vs_aug_delta'],
+      cols: [['partner', 'Partner'], ['region', 'Zone'], ['aug_mrr', 'Aug', 'usd'], ['sep_mrr', 'Sep', 'usd'], ['sep_vs_aug_delta', 'Δ vs Aug', 'signed']] },
+    octpred: { src: 'mrr_by_partner', title: 'October predicted MRR by partner', sort: (a, b) => b.oct_predicted - a.oct_predicted, total: ['sep_mrr', 'oct_predicted', 'mrr_delta'],
+      cols: [['partner', 'Partner'], ['region', 'Zone'], ['sep_mrr', 'Sep', 'usd'], ['oct_predicted', 'Oct forecast', 'usd'], ['mrr_delta', 'Δ vs Sep', 'signed']] },
+    mrrdelta: { src: 'mrr_by_partner', title: 'Partners moving MRR (Oct vs Sep)', filter: (r) => Math.abs(r.mrr_delta) >= 0.5, sort: (a, b) => Math.abs(b.mrr_delta) - Math.abs(a.mrr_delta), total: ['sep_mrr', 'oct_predicted', 'mrr_delta'],
+      cols: [['partner', 'Partner'], ['region', 'Zone'], ['sep_mrr', 'Sep', 'usd'], ['oct_predicted', 'Oct forecast', 'usd'], ['mrr_delta', 'MRR delta', 'signed']] },
+    arrimpact: { src: 'mrr_by_partner', title: 'ARR implication by partner (MRR delta × 12)', filter: (r) => Math.abs(r.mrr_delta) >= 0.5, sort: (a, b) => b.arr_impact - a.arr_impact, total: ['mrr_delta', 'arr_impact', 'oct_run_rate_arr'],
+      cols: [['partner', 'Partner'], ['region', 'Zone'], ['mrr_delta', 'MRR delta', 'signed'], ['arr_impact', 'ARR implication', 'signed'], ['oct_run_rate_arr', 'Oct run-rate ARR', 'usd']] },
+    partners: { src: 'partner_master', title: 'All partners', sort: (a, b) => a.zone.localeCompare(b.zone) || a.partner.localeCompare(b.partner),
+      cols: [['partner', 'Partner'], ['zone', 'Zone'], ['business_model', 'Model'], ['billing_type', 'Billing type'], ['product', 'Product'], ['live_products', 'Live products']] },
+    models: { src: 'partner_master', title: 'Partners by business model', sort: (a, b) => a.business_model.localeCompare(b.business_model) || a.partner.localeCompare(b.partner),
+      cols: [['partner', 'Partner'], ['business_model', 'Model'], ['billing_type', 'Billing type'], ['billed_on', 'Billed on'], ['zone', 'Zone'], ['oct_predicted', 'Oct MRR', 'usd']] },
+    svscope: { src: 'partner_master', title: 'Clients in scope for Smartview VDP agent', filter: (r) => r.smartview_scope, sort: (a, b) => a.priority_rank - b.priority_rank || (b.oct_predicted || 0) - (a.oct_predicted || 0),
+      cols: [['partner', 'Partner'], ['smartview_priority', 'Fit'], ['smartview_bundle', 'Bundle with'], ['partner_offers', 'Partner offers'], ['zone', 'Zone'], ['oct_predicted', 'Oct MRR', 'usd']] },
+    upsell: { src: 'partner_master', title: 'Studio rows with 360 or video upsell', filter: (r) => /360 upsell|Video upsell/.test(r.open_scope), sort: (a, b) => (b.oct_predicted || 0) - (a.oct_predicted || 0),
+      cols: [['partner', 'Partner'], ['live_products', 'Live now'], ['upsells', 'Upsell'], ['zone', 'Zone'], ['oct_predicted', 'Oct MRR', 'usd']] },
+    svhighmrr: { src: 'partner_master', title: 'High-fit Smartview clients and their October MRR', filter: (r) => r.client_smartview_priority === 'High', sort: (a, b) => (b.oct_predicted || 0) - (a.oct_predicted || 0), total: ['oct_predicted', 'mrr_delta'],
+      cols: [['partner', 'Partner'], ['partner_offers', 'Partner offers'], ['oct_predicted', 'Oct MRR', 'usd'], ['mrr_delta', 'Δ vs Sep', 'signed']] },
+    rtpen: { src: 'partner_master', title: 'Rooftop penetration by partner (lowest first)', filter: (r) => r.rooftop_penetration != null, sort: (a, b) => a.rooftop_penetration - b.rooftop_penetration || b.rooftops_pending_est - a.rooftops_pending_est, total: ['onboarded_rooftops', 'total_rooftops', 'rooftops_pending_est'],
+      cols: [['partner', 'Partner'], ['zone', 'Zone'], ['onboarded_rooftops', 'Onboarded', 'int'], ['total_rooftops', 'Total', 'int'], ['rooftops_pending_est', 'Pending (est.)', 'int'], ['rooftop_penetration', 'Penetration', 'pct']] },
+    rton: { src: 'partner_master', title: 'Rooftops onboarded by partner', filter: (r) => r.rooftop_penetration != null, sort: (a, b) => b.onboarded_rooftops - a.onboarded_rooftops, total: ['onboarded_rooftops', 'total_rooftops'],
+      cols: [['partner', 'Partner'], ['zone', 'Zone'], ['onboarded_rooftops', 'Onboarded', 'int'], ['total_rooftops', 'Total', 'int'], ['rooftop_penetration', 'Penetration', 'pct']] },
+    rtpend: { src: 'partner_master', title: 'Pending rooftops by partner (estimate)', filter: (r) => r.rooftops_pending_est > 0, sort: (a, b) => b.rooftops_pending_est - a.rooftops_pending_est, total: ['rooftops_pending_est'],
+      cols: [['partner', 'Partner'], ['zone', 'Zone'], ['rooftops_pending_est', 'Pending (est.)', 'int'], ['onboarded_rooftops', 'Onboarded', 'int'], ['total_rooftops', 'Total', 'int'], ['smartview_priority', 'Smartview fit']] },
+    blocker: { src: 'partner_actions', title: 'Partners with a blocker', filter: (r) => r.has_blocker, sort: (a, b) => (b.oct_predicted || 0) - (a.oct_predicted || 0),
+      cols: [['partner', 'Partner'], ['oct_predicted', 'Oct MRR', 'usd'], ['oct_vs_sep', 'vs Sep', 'pctSigned'], ['blockers_levers', 'Blockers / levers', 'bl']] },
+    lever: { src: 'partner_actions', title: 'Partners with a lever', filter: (r) => r.has_lever, sort: (a, b) => (b.oct_predicted || 0) - (a.oct_predicted || 0),
+      cols: [['partner', 'Partner'], ['oct_predicted', 'Oct MRR', 'usd'], ['oct_vs_sep', 'vs Sep', 'pctSigned'], ['blockers_levers', 'Blockers / levers', 'bl']] },
+    expansion: { src: 'partner_actions', title: 'Cross-sell / expansion opportunities', filter: (r) => r.expansion === 'Yes', sort: (a, b) => (b.oct_predicted || 0) - (a.oct_predicted || 0),
+      cols: [['partner', 'Partner'], ['oct_predicted', 'Oct MRR', 'usd'], ['cross_sell', 'Cross-sell / expansion']] },
+    expmrr: { src: 'partner_actions', title: 'October MRR on expansion accounts', filter: (r) => r.expansion === 'Yes', sort: (a, b) => (b.oct_predicted || 0) - (a.oct_predicted || 0), total: ['oct_predicted'],
+      cols: [['partner', 'Partner'], ['oct_predicted', 'Oct MRR', 'usd'], ['oct_vs_sep', 'vs Sep', 'pctSigned'], ['cross_sell', 'Cross-sell / expansion']] },
+  };
+  let openDrill = null;
+  const fmtCell = (td, v, kind, row) => {
+    if (kind === 'bl') { blText(td, v); return; }
+    if (v == null || v === '') { td.textContent = '—'; td.classList.add('mrr-muted'); return; }
+    if (kind === 'usd') { td.textContent = usd(v); td.classList.add('num'); }
+    else if (kind === 'signed') { td.textContent = signedUsd(v); td.classList.add('num'); if (Math.abs(v) >= 0.5) td.classList.add(v > 0 ? 'mrr-up' : 'mrr-down'); }
+    else if (kind === 'int') { td.textContent = d3.format(',')(v); td.classList.add('num'); }
+    else if (kind === 'pct') { td.textContent = d3.format('.0%')(v); td.classList.add('num'); }
+    else if (kind === 'pctSigned') { td.textContent = pct(v); td.classList.add('num'); if (v) td.classList.add(v > 0 ? 'mrr-up' : 'mrr-down'); }
+    else td.textContent = v;
+  };
+  const drawDrill = () => {
+    document.querySelectorAll('.mrr-drill').forEach((p) => { if (!openDrill || p.id !== openDrill.panel) { p.hidden = true; p.replaceChildren(); } });
+    document.querySelectorAll('.mrr-card[data-drill]').forEach((c) => c.setAttribute('aria-expanded', String(!!openDrill && c.dataset.drill === openDrill.key)));
+    if (!openDrill) return;
+    const spec = DRILL[openDrill.key];
+    const panel = document.getElementById(openDrill.panel);
+    panel.hidden = false; panel.replaceChildren();
+    const st = dash.data(spec.src);
+    const head = document.createElement('div'); head.className = 'mrr-drill-head';
+    const h = document.createElement('h3'); h.textContent = spec.title;
+    const cnt = document.createElement('span');
+    const close = document.createElement('button'); close.type = 'button'; close.textContent = 'Close';
+    close.addEventListener('click', () => { openDrill = null; drawDrill(); });
+    head.append(h, cnt, close); panel.append(head);
+    const box = document.createElement('div'); box.className = 'mrr-tbox';
+    const tbl = document.createElement('table'); tbl.className = 'mrr-tbl';
+    tbl.dataset.source = spec.src; tbl.dataset.rowKey = 'partner';
+    const thr = tbl.createTHead().insertRow();
+    spec.cols.forEach(([f, label, kind]) => { const th = document.createElement('th'); th.dataset.field = f === 'upsells' ? 'open_scope' : f; th.textContent = label; if (['usd', 'signed', 'int', 'pct', 'pctSigned'].includes(kind)) th.className = 'num'; thr.append(th); });
+    const tb = tbl.createTBody();
+    box.append(tbl); panel.append(box);
+    if (st.status !== 'ok') {
+      const td = tb.insertRow().insertCell(); td.colSpan = spec.cols.length;
+      if (st.status === 'error') { td.className = 'mrr-fail'; td.textContent = 'Failed to load'; } else td.className = 'dash-skeleton';
+      return;
+    }
+    const rows = st.data.filter(spec.filter || (() => true)).sort(spec.sort);
+    cnt.textContent = rows.length + (rows.length === 1 ? ' row' : ' rows');
+    rows.forEach((r) => {
+      const tr = tb.insertRow(); tr.dataset.key = r.partner;
+      spec.cols.forEach(([f, , kind]) => {
+        const td = tr.insertCell();
+        if (f === 'partner') td.className = 'name';
+        const v = f === 'upsells' ? (r.open_scope || '').split(', ').filter((x) => /upsell/.test(x)).join(', ') : r[f];
+        fmtCell(td, v, kind, r);
+        if (kind === 'bl' || ['smartview_bundle', 'partner_offers', 'cross_sell', 'live_products'].includes(f)) td.classList.add('txt');
+      });
+    });
+    if (spec.total && rows.length) {
+      const fr = tbl.createTFoot().insertRow();
+      spec.cols.forEach(([f, , kind], i) => {
+        const td = fr.insertCell();
+        if (i === 0) { td.textContent = 'Total'; return; }
+        if (!spec.total.includes(f)) return;
+        fmtCell(td, rows.reduce((t, r) => t + (r[f] || 0), 0), kind);
+      });
+    }
+  };
+  document.querySelectorAll('.mrr-card[data-drill]').forEach((card) => {
+    card.setAttribute('role', 'button'); card.setAttribute('tabindex', '0'); card.setAttribute('aria-expanded', 'false');
+    const more = document.createElement('span'); more.className = 'mrr-more'; more.textContent = 'Show rows ›'; card.append(more);
+    const toggle = () => {
+      openDrill = openDrill && openDrill.key === card.dataset.drill ? null : { key: card.dataset.drill, panel: card.dataset.panel };
+      drawDrill();
+      if (openDrill) document.getElementById(openDrill.panel).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    };
+    card.addEventListener('click', toggle);
+    card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+  });
+
+  dash.onData(() => {
+    const k = dash.data('action_counts');
+    const kr = k.status === 'ok' && k.data && k.data[0];
+    cmarks.forEach((el) => {
+      el.classList.remove('mrr-fail');
+      if (!kr) {
+        el.textContent = '—';
+        if (k.status === 'error') { el.classList.remove('dash-skeleton'); el.classList.add('mrr-fail'); el.textContent = 'Failed to load'; }
+        else el.classList.add('dash-skeleton');
+        return;
+      }
+      el.classList.remove('dash-skeleton');
+      const v = kr[el.dataset.field];
+      el.textContent = el.dataset.field === 'expansion_oct_mrr' ? usd(v) : d3.format(',')(v);
+    });
+    drawTable();
+
+    drawPartners();
+    drawDrill();
+    fillMarks(pmarks, 'partner_counts', (el, v, f) => { el.textContent = v == null ? '—' : f === 'sv_high_oct_mrr' ? usd(v) : f === 'rooftop_penetration' ? d3.format('.1%')(v) : d3.format(',')(v); });
+    fillMarks(marks, 'mrr_summary', (el, v, f) => {
+      if (f === 'partners') el.textContent = d3.format(',')(v);
+      else if (/_vs_/.test(f)) { el.textContent = pct(v); if (v != null) el.classList.add(v >= 0 ? 'mrr-up' : 'mrr-down'); }
+      else if (/delta|impact/.test(f)) { el.textContent = signedUsd(v); if (v) el.classList.add(v > 0 ? 'mrr-up' : 'mrr-down'); }
+      else el.textContent = v == null ? '—' : usd(v);
+    });
+  });
+
+  // ---- boot ----
+  const b64 = (text) => { const bytes = new TextEncoder().encode(text); let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); };
+  const notify = () => LISTENERS.forEach((f) => { try { f(); } catch (e) { console.error(e); } });
+  const runCalcs = () => {
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const [name, spec] of Object.entries(REG.calc)) {
+        if (STATE[name] && STATE[name].status !== 'loading') continue;
+        const ins = spec.inputs.map((i) => STATE[i] || { status: 'loading' });
+        if (ins.some((x) => x.status === 'error')) { STATE[name] = { status: 'error', error: 'An input failed to load' }; changed = true; continue; }
+        if (ins.every((x) => x.status === 'ok')) {
+          try { STATE[name] = { status: 'ok', data: spec.fn(...ins.map((x) => x.data)) }; } catch (e) { console.error(name, e); STATE[name] = { status: 'error', error: e.message }; }
+          changed = true;
+        }
+      }
+    }
+  };
+  const errorsBox = document.getElementById('load-errors');
+  const showError = (name, msg) => {
+    const p = document.createElement('p');
+    p.textContent = 'Couldn’t load the ' + SOURCE_NAMES[name] + ': ' + msg;
+    errorsBox.append(p); errorsBox.hidden = false;
+  };
+  STATE.partner_research = { status: 'ok', data: PARTNER_RESEARCH };
+  const load = async (name) => {
+    try {
+      const url = CONFIG[name];
+      if (!url || url.includes('PASTE_')) throw new Error('its tab number (gid) isn’t set yet. Open the sheet, click that tab, copy the number after “#gid=” in the address bar, and paste it into RAG_GID near the top of the script in index.html.');
+      const res = await fetch(url + (url.includes('?') ? '&' : '?') + '_=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) throw new Error('the link returned HTTP ' + res.status + '. Check it is published to the web and opens in a private browser window.');
+      const text = await res.text();
+      if (/^\s*<!doctype html|<html/i.test(text)) throw new Error('the link returned a web page, not CSV. Publish the tab as “Comma-separated values (.csv)”, and make sure publishing isn’t limited to your organisation.');
+      const out = REG.loader[name].fn({ answer: { content: b64(text), title: SOURCE_NAMES[name] }, text });
+      STATE[name] = { status: 'ok', data: out.rows };
+    } catch (e) {
+      STATE[name] = { status: 'error', error: e.message };
+      showError(name, e.message);
+    }
+    runCalcs(); notify();
+  };
+  runCalcs(); notify();
+  Promise.all(['ond_sheet', 'rag_sheet', 'rooftops'].map(load)).then(() => {
+    const t = document.getElementById('loaded-at');
+    if (t) t.textContent = 'Loaded ' + new Date().toLocaleString();
+  });
+</script>
+</body>
+</html>
