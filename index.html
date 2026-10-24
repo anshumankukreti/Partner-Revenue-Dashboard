@@ -32,6 +32,7 @@
   .load-errors p { margin: 0 0 4px; }
   .foot { margin-top: var(--cds-gap-lg); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
 
+
   .mrr { font-family: var(--font-anthropic-sans); display: flex; flex-direction: column; gap: var(--cds-gap-lg); }
   .mrr-head h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; }
   .mrr-head p { margin: var(--cds-gap-xs) 0 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-body); }
@@ -153,7 +154,7 @@
 
   <section class="mrr-sec" id="partners">
     <h2 class="mrr-sech">All partners</h2>
-    <p>Zone, business model and products live come from the RAG Dashboard tab. Smartview VDP agent (a widget on the inventory thumbnail plus a sales inbound agent that books the appointment or enquiry against that vehicle) is in scope for every client on Studio or with a marketing offering: High where they run dealer websites, Medium where they sell marketing or feed dealer sites, Base for Studio only. Sales outbound and acquisition agents are listed once per client; 360 and video upsells only where Studio is live without them. Rooftop numbers come live from the Partner Data sheet; pending rooftops are an estimate.</p>
+    
     <div class="mrr-mini">
       <div data-drill="partners" data-panel="drill-partners" class="mrr-card"><span class="mrr-win">Partners (clients)</span><div class="mrr-val dash-skeleton" data-source="partner_counts" data-field="partners" data-row="0">—</div><span class="mrr-win">AMER <span data-source="partner_counts" data-field="amer" data-row="0">—</span> · EMEA/APAC <span data-source="partner_counts" data-field="emea" data-row="0">—</span></span></div>
       <div data-drill="models" data-panel="drill-partners" class="mrr-card"><span class="mrr-win">Subscription / usage</span><div class="mrr-val"><span class="dash-skeleton" data-source="partner_counts" data-field="subscription" data-row="0">—</span> / <span class="dash-skeleton" data-source="partner_counts" data-field="usage" data-row="0">—</span></div><span class="mrr-win">Usage includes PayG</span></div>
@@ -249,7 +250,7 @@
 </div>
 
 
-<p class="foot"><span id="loaded-at">Loading…</span> · Data from the published Google Sheets; refresh the page to reload. Website research is a snapshot from Oct 23, 2026.</p>
+<p class="foot">Version 2026-10-24 v4 · <span id="loaded-at">Loading…</span> · Data from the published Google Sheets; refresh the page to reload. Website research is a snapshot from Oct 24, 2026.</p>
 </div>
 <script>
   // ---- settings: paste your published CSV links here ----
@@ -261,11 +262,13 @@
     rag_sheet: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRjdPbiRpCK5C5ooUbsqv_ApLGqmWrCXVKtxErUYGkBA-f-RovHbXEPvONMDD5HuXCVs0UNNyJAqJmC/pub?gid=' + RAG_GID + '&single=true&output=csv',
     // Partner Data (AMER + EMEA) → tab "A"
     rooftops: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTeoPZZDQPJg9y8hHfkKcDjTDpe6xUXGgkaOSbYQC8r8ZPhx6q-5oG4cwzHJUgjFiI8QNqQPbIsA0pA/pub?output=csv',
+    // Partner Induction Sheet → tab "Master Sheet" (File → Share → Publish to web → Master Sheet → CSV). Optional: without it the page simply shows no induction-sheet context.
+    induction: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQd587c0HY4mEN5uhlsP8wwLoEJe9mNv7GAlxNeBqXr7UqmM9l4k1no96WJdipfiEr1g4wDR8jhZXGE/pub?output=csv',
   };
-  const SOURCE_NAMES = { ond_sheet: 'OND Planning Draft tab', rag_sheet: 'RAG Dashboard tab', rooftops: 'Partner Data tab A' };
+  const SOURCE_NAMES = { ond_sheet: 'OND Planning Draft tab', rag_sheet: 'RAG Dashboard tab', rooftops: 'Partner Data tab A', induction: 'Partner Induction Sheet (Master Sheet)' };
 
   // ---- partner website research (snapshot, Oct 23 2026) ----
-  const PARTNER_RESEARCH = [{"partner": "Autopix", "website": "autopix.no", "what_they_do": "Norwegian phone app for AI car photo backgrounds; publishes images into dealer systems.", "website_services": "No", "smartview_priority": "Low", "research_status": "Checked"}, {"partner": "Think C", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "Vivition", "website": "—", "what_they_do": "Automotive photography and image-optimisation software (since 2017); integrates with stock tools such as CarCollect.", "website_services": "No", "smartview_priority": "Low", "research_status": "Checked"}, {"partner": "Digiflow", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "Everyday", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}, {"partner": "Inmersiva", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "Scaleo", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "Autokuva", "website": "spinio.fi (possible)", "what_they_do": "Possibly Spinio (Finland): automated photo studios for car retailers, images sent to dealer systems via API. The sheet’s “Joel” matches Spinio’s CFO; confirm with the KAM.", "website_services": "No", "smartview_priority": "Low", "research_status": "Checked – likely match"}, {"partner": "Autoload", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "Dealcar", "website": "—", "what_they_do": "Madrid-based all-in-one SaaS for used-car dealers (stock, CRM, portal distribution). Own dealer websites not confirmed.", "website_services": "Unclear", "smartview_priority": "Medium", "research_status": "Checked"}, {"partner": "Carlens 360", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "Vehixpro", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}, {"partner": "Clarvio", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}, {"partner": "Eastern Digital LLC", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "Metadome", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}, {"partner": "Carlover", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}, {"partner": "Call Source", "website": "callsource.com", "what_they_do": "Call tracking and virtual BDC for dealers; its automotive division was acquired by CallRevu.", "website_services": "No", "smartview_priority": "Low", "research_status": "Checked"}, {"partner": "35 inch", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}, {"partner": "Teton Solutions Group", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "Dealer Vision", "website": "dealervision.com", "what_they_do": "Photo and walkaround-video merchandising platform; adds video to dealer VDPs (Dealer.com, Dealer eProcess integrations).", "website_services": "VDP plug-in", "smartview_priority": "Medium", "research_status": "Checked"}, {"partner": "Pro-Motion Pix", "website": "promotionpix.com", "what_they_do": "Full-service on-lot photography, 360 spins, background replacement, window stickers, data polling (vAuto, AAX, FirstLook). The Partner Data sheet also lists dealer websites among its offerings.", "website_services": "Yes – dealer websites (per Partner Data sheet)", "smartview_priority": "High", "research_status": "Checked + Partner Data sheet"}, {"partner": "Foto-Ops", "website": "foto-ops.com", "what_they_do": "Pro-MotionPix’s self-serve photo and 360 capture app; exports photos and data to dealer websites and third-party sites.", "website_services": "Exports to dealer sites", "smartview_priority": "Low", "research_status": "Checked + Partner Data sheet"}, {"partner": "Dealer Specialties LLC", "website": "dealerspecialties.com", "what_they_do": "Inventory data and photo collection, window labels and listing distribution to dealer sites and portals.", "website_services": "Feeds dealer sites", "smartview_priority": "Medium", "research_status": "Checked"}, {"partner": "Automotive Marketing Solution", "website": "—", "what_they_do": "Dealership marketing: photos, HD video, social media, inventory feed management (sheet notes identification not fully confirmed).", "website_services": "Feeds dealer sites", "smartview_priority": "Medium", "research_status": "Partner Data sheet"}, {"partner": "Elite Auto Marketing Solutions", "website": "—", "what_they_do": "Vehicle photography, digital advertising and video marketing for dealerships.", "website_services": "No", "smartview_priority": "Low", "research_status": "Partner Data sheet"}, {"partner": "EDealer Inc", "website": "edealer.ca", "what_they_do": "Dealer website provider; certified website vendor for GM Canada and Stellantis Canada; also SEO/SEM.", "website_services": "Yes – builds dealer websites", "smartview_priority": "High", "research_status": "Checked"}, {"partner": "Rim Revolution LLC", "website": "rimrevolution.com", "what_they_do": "Recon services: rim repair and painting, paint correction, ceramic coating, tint, vinyl wrap.", "website_services": "No", "smartview_priority": "Low", "research_status": "Partner Data sheet"}, {"partner": "Megadealer", "website": "megadealer.com.br", "what_they_do": "Brazilian company per the Partner Data sheet website; offerings not filled in.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Website from Partner Data sheet"}, {"partner": "Median Media LLC", "website": "median-media.com", "what_they_do": "Photography and refurbishment services for dealers.", "website_services": "No", "smartview_priority": "Low", "research_status": "Partner Data sheet"}, {"partner": "Mobials Inc.", "website": "autoverify.com", "what_they_do": "AutoVerify suite of conversion tools that sit on dealer websites (trade-in, pre-qualify, test drive, e-commerce, reviews).", "website_services": "Yes – website plug-ins", "smartview_priority": "High", "research_status": "Checked"}, {"partner": "Aecsolutions", "website": "aecsolutions.com", "what_they_do": "Website per Partner Data sheet; offerings not filled in.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Website from Partner Data sheet"}, {"partner": "Pixel Cars", "website": "—", "what_they_do": "Small independent photography provider (1 rooftop).", "website_services": "No", "smartview_priority": "Low", "research_status": "Partner Data sheet"}, {"partner": "Yoga cars", "website": "—", "what_they_do": "Small independent photography provider (1 rooftop).", "website_services": "No", "smartview_priority": "Low", "research_status": "Partner Data sheet"}, {"partner": "Netlook", "website": "netlook.com", "what_they_do": "Inventory merchandising; its VehicleTell photo/video/360 player is embedded in dealer websites (BuiltWith lists ~1,800 live sites).", "website_services": "Yes – VDP media player", "smartview_priority": "High", "research_status": "Checked"}, {"partner": "Smartlot", "website": "smartlot.com", "what_they_do": "Website per Partner Data sheet; offerings not filled in, and several companies use this name.", "website_services": "Unclear", "smartview_priority": "Unknown", "research_status": "Checked – unclear"}, {"partner": "Vincue_Benjamin", "website": "vincue.com", "what_they_do": "Inventory lifecycle platform for dealers that also builds dealer websites and runs VIN-level advertising.", "website_services": "Yes – builds dealer websites", "smartview_priority": "High", "research_status": "Checked"}, {"partner": "Vincue_Merchandising", "website": "vincue.com", "what_they_do": "Same company as Vincue_Benjamin (VINCUE): inventory platform plus dealer websites.", "website_services": "Yes – builds dealer websites", "smartview_priority": "High", "research_status": "Checked"}, {"partner": "Topster Ltda.", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}, {"partner": "Zipbid", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "360 Cars Chile SpA", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}, {"partner": "PILOT AI TECNOLOGIA LTDA", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}, {"partner": "Dealer Shock Inc", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "Frontline Photography", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}];
+  const PARTNER_RESEARCH = [{"partner": "Autopix", "website": "autopix.no", "what_they_do": "Norwegian phone app for AI car photo backgrounds; publishes images into dealer systems.", "website_services": "No", "smartview_priority": "Low", "research_status": "Checked"}, {"partner": "Think C", "website": "thinkc.me", "what_they_do": "Middle East digital-marketing company (their listed site is a digital-marketing page); takes Images + 360 + Video on VINs.", "website_services": "Marketing agency", "smartview_priority": "Unknown", "research_status": "Partner Induction Sheet", "marketing": true}, {"partner": "Vivition", "website": "vivition.com", "what_they_do": "Netherlands automotive photography / image-optimisation software; takes Images only, billed per image.", "website_services": "No", "smartview_priority": "Low", "research_status": "Checked + Partner Induction Sheet"}, {"partner": "Digiflow", "website": "digiflow.be", "what_they_do": "Belgian partner; contract for 50 cars a month but currently not using the product.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Partner Induction Sheet"}, {"partner": "Everyday", "website": "—", "what_they_do": "Netherlands partner; small Images subscription (200–300 images a month).", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Partner Induction Sheet"}, {"partner": "Inmersiva", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "Scaleo", "website": "scala-auto.com", "what_they_do": "French partner (Carizy customer); Images + 360 + Video on ~1,000 VINs a month.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Partner Induction Sheet"}, {"partner": "Autokuva", "website": "spinio.fi", "what_they_do": "Confirmed as Spinio (Finland; account in system: Rawian Oy). Automated photo studios; ~60–70K images a month incl. bike images.", "website_services": "No", "smartview_priority": "Low", "research_status": "Confirmed by Partner Induction Sheet"}, {"partner": "Autoload", "website": "—", "what_they_do": "Autoload / Auto Turn It / Autoworks (UK); Images + 360 on 5,000–10,000 VINs a month.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Partner Induction Sheet"}, {"partner": "Dealcar", "website": "—", "what_they_do": "Madrid-based all-in-one SaaS for used-car dealers (stock, CRM, portal distribution); Images on ~1,000 VINs a month.", "website_services": "Unclear", "smartview_priority": "Medium", "research_status": "Checked + Partner Induction Sheet"}, {"partner": "Carlens 360", "website": "—", "what_they_do": "UK partner; Images + 360 on ~6,000 VINs a month.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Partner Induction Sheet"}, {"partner": "Vehixpro", "website": "—", "what_they_do": "Vehixpro / Garcia Group (Switzerland); pay-as-you-go Images + 360.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Partner Induction Sheet"}, {"partner": "Clarvio", "website": "—", "what_they_do": "UK partner on a white-label setup (Images + 360 + Video).", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Partner Induction Sheet"}, {"partner": "Eastern Digital LLC", "website": "—", "what_they_do": "US partner; Images + Video on ~400 VINs a month, FTP delivery.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Partner Induction Sheet"}, {"partner": "Metadome", "website": "—", "what_they_do": "India partner; Images at ₹4 per image (~7.9 lakh images a quarter).", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Partner Induction Sheet"}, {"partner": "Carlover", "website": "carlover.co.uk", "what_they_do": "Northern Ireland dealer software; Spyne images bundled as a free-trial kit to sell their main product.", "website_services": "Unclear", "smartview_priority": "Unknown", "research_status": "Partner Induction Sheet"}, {"partner": "Call Source", "website": "callsource.com", "what_they_do": "Call tracking and virtual BDC for dealers; its automotive division was acquired by CallRevu.", "website_services": "No", "smartview_priority": "Low", "research_status": "Checked"}, {"partner": "35 inch", "website": "35inch.com", "what_they_do": "35inch / Cartech AI, Turkey; Images on ~400 VINs a month.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Partner Induction Sheet"}, {"partner": "Teton Solutions Group", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "Dealer Vision", "website": "dealervision.com", "what_they_do": "Photo and walkaround-video merchandising platform; adds video to dealer VDPs (Dealer.com, Dealer eProcess integrations).", "website_services": "VDP plug-in", "smartview_priority": "Medium", "research_status": "Checked"}, {"partner": "Pro-Motion Pix", "website": "promotionpix.com", "what_they_do": "Full-service on-lot photography, 360 spins, background replacement, window stickers, data polling (vAuto, AAX, FirstLook). The Partner Data sheet also lists dealer websites among its offerings.", "website_services": "Yes – dealer websites (per Partner Data sheet)", "smartview_priority": "High", "research_status": "Checked + Partner Data sheet"}, {"partner": "Foto-Ops", "website": "foto-ops.com", "what_they_do": "Pro-MotionPix’s self-serve photo and 360 capture app; exports photos and data to dealer websites and third-party sites.", "website_services": "Exports to dealer sites", "smartview_priority": "Low", "research_status": "Checked + Partner Data sheet"}, {"partner": "Dealer Specialties LLC", "website": "dealerspecialties.com", "what_they_do": "Inventory data and photo collection, window labels and listing distribution to dealer sites and portals.", "website_services": "Feeds dealer sites", "smartview_priority": "Medium", "research_status": "Checked"}, {"partner": "Automotive Marketing Solution", "website": "—", "what_they_do": "Dealership marketing: photos, HD video, social media, inventory feed management (sheet notes identification not fully confirmed).", "website_services": "Feeds dealer sites", "smartview_priority": "Medium", "research_status": "Partner Data sheet"}, {"partner": "Elite Auto Marketing Solutions", "website": "—", "what_they_do": "Vehicle photography, digital advertising and video marketing for dealerships.", "website_services": "No", "smartview_priority": "Low", "research_status": "Partner Data sheet"}, {"partner": "EDealer Inc", "website": "edealer.ca", "what_they_do": "Dealer website provider; certified website vendor for GM Canada and Stellantis Canada; also SEO/SEM.", "website_services": "Yes – builds dealer websites", "smartview_priority": "High", "research_status": "Checked"}, {"partner": "Rim Revolution LLC", "website": "rimrevolution.com", "what_they_do": "Recon services: rim repair and painting, paint correction, ceramic coating, tint, vinyl wrap.", "website_services": "No", "smartview_priority": "Low", "research_status": "Partner Data sheet"}, {"partner": "Megadealer", "website": "megadealer.com.br", "what_they_do": "Brazilian company per the Partner Data sheet website; offerings not filled in.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Website from Partner Data sheet"}, {"partner": "Median Media LLC", "website": "median-media.com", "what_they_do": "Photography and refurbishment services for dealers.", "website_services": "No", "smartview_priority": "Low", "research_status": "Partner Data sheet"}, {"partner": "Mobials Inc.", "website": "autoverify.com", "what_they_do": "AutoVerify suite of conversion tools that sit on dealer websites (trade-in, pre-qualify, test drive, e-commerce, reviews).", "website_services": "Yes – website plug-ins", "smartview_priority": "High", "research_status": "Checked"}, {"partner": "Aecsolutions", "website": "aecsolutions.com", "what_they_do": "Website per Partner Data sheet; offerings not filled in.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Website from Partner Data sheet"}, {"partner": "Pixel Cars", "website": "—", "what_they_do": "Small independent photography provider (1 rooftop).", "website_services": "No", "smartview_priority": "Low", "research_status": "Partner Data sheet"}, {"partner": "Yoga cars", "website": "—", "what_they_do": "Small independent photography provider (1 rooftop).", "website_services": "No", "smartview_priority": "Low", "research_status": "Partner Data sheet"}, {"partner": "Netlook", "website": "netlook.com", "what_they_do": "Inventory merchandising; its VehicleTell photo/video/360 player is embedded in dealer websites (BuiltWith lists ~1,800 live sites).", "website_services": "Yes – VDP media player", "smartview_priority": "High", "research_status": "Checked"}, {"partner": "Smartlot", "website": "smartlot.com", "what_they_do": "Website per Partner Data sheet; offerings not filled in, and several companies use this name.", "website_services": "Unclear", "smartview_priority": "Unknown", "research_status": "Checked – unclear"}, {"partner": "Vincue_Benjamin", "website": "vincue.com", "what_they_do": "Inventory lifecycle platform for dealers that also builds dealer websites and runs VIN-level advertising.", "website_services": "Yes – builds dealer websites", "smartview_priority": "High", "research_status": "Checked"}, {"partner": "Vincue_Merchandising", "website": "vincue.com", "what_they_do": "Same company as Vincue_Benjamin (VINCUE): inventory platform plus dealer websites.", "website_services": "Yes – builds dealer websites", "smartview_priority": "High", "research_status": "Checked"}, {"partner": "Topster Ltda.", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}, {"partner": "Zipbid", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "360 Cars Chile SpA", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}, {"partner": "PILOT AI TECNOLOGIA LTDA", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}, {"partner": "Dealer Shock Inc", "website": "—", "what_they_do": "No reliable match found online for this partner name.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Searched – not found"}, {"partner": "Frontline Photography", "website": "—", "what_they_do": "Not checked yet.", "website_services": "Unknown", "smartview_priority": "Unknown", "research_status": "Not checked"}];
 
   // ---- tiny runtime: loaders, calcs, onData ----
   const parseCsv = (text) => {
@@ -289,6 +292,8 @@
     data: (n) => STATE[n] || { status: 'loading' },
   };
 
+
+
   dash.calc('mrr_summary', {
     inputs: ['ond_sheet'],
     title: 'MRR summary',
@@ -311,8 +316,8 @@
   dash.calc('mrr_by_partner', {
     inputs: ['ond_sheet'],
     title: 'MRR by partner',
-    description: 'Per partner: Jul–Sep MRR and their average, October forecast, MRR delta (Oct − Sep, and Sep − Aug) and the ARR implication (× 12).',
-    fn: (ond_sheet) => ond_sheet.map((r) => {
+    description: 'Per partner with September or October MRR: Jul–Sep MRR and their average, October forecast, MRR delta (Oct − Sep, and Sep − Aug) and the ARR implication (× 12).',
+    fn: (ond_sheet) => ond_sheet.filter((o) => Math.abs(o.sep_mrr || 0) >= 0.5 || Math.abs(o.oct_predicted || 0) >= 0.5).map((r) => {
       const jul = r.jul_mrr || 0, aug = r.aug_mrr || 0, sep = r.sep_mrr || 0, oct = r.oct_predicted || 0;
       return {
         partner: r.partner, region: r.region,
@@ -493,12 +498,98 @@
     },
   });
 
+  dash.loader('induction', {
+    description: 'Decodes the CSV export of the Master Sheet tab: one row per account with POC, issues, opportunity, commercials text, payment status and links, keyed by the column headers.',
+    fn: ({ answer }) => {
+      let a = answer;
+      if (Array.isArray(a) && a[0] && typeof a[0].text === 'string') a = a[0].text;
+      if (typeof a === 'string') { try { a = JSON.parse(a); } catch (e) { throw new Error(a.slice(0, 200)); } }
+      if (!a || typeof a.content !== 'string') throw new Error('No file content in the answer (keys: ' + Object.keys(a || {}).join(', ') + ')');
+      const bin = atob(a.content);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const text = new TextDecoder('utf-8').decode(bytes);
+      const rows = []; let row = [], cell = '', q = false;
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (q) { if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
+        else if (c === '"') q = true;
+        else if (c === ',') { row.push(cell); cell = ''; }
+        else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+        else cell += c;
+      }
+      if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+      const head = rows[0].map((h) => h.trim());
+      if (!head.includes('Account')) throw new Error('No “Account” column — is the Master Sheet still the first tab?');
+      const MAP = {
+        account: 'Account', enterprise_id: 'Enterprise ID', region: 'Region', target_market: 'Target Market', poc: 'POC', poc_contact: 'POC Contact',
+        website: 'Website', channel: 'Communication channel', recurring_issue: 'Recurring Issue', expansion_confidence: 'Expansion Confidence',
+        over_contract_promise: 'Over Contract promise', introduction: 'Introduction', last_escalation_email: 'Last Escalation Email', last_payment_email: 'Last Payment Email',
+        current_issue: 'Current Issue', issue_detail: 'Issue in details', opportunity: 'Opportunity', opportunity_detail: 'Opportunity in Details',
+        opportunity_value: 'Quantifying the opportunity', product: 'Product', pricing: 'Pricing', contract_arr: 'Contract ARR', running_arr: 'Running ARR',
+        last_month_usage: 'Last Month Usage', monthly_volume: 'Monthly Volume', billing_type: 'Billing Type', billing_cadence: 'Billing Cadence',
+        billed_on: 'Billed ON', current_billing_type: 'Current Billing Type', payment_due: 'Payment Due', payment_due_amount: 'Payment Due in Number',
+        in_system: 'How long in system', last_meeting: 'Last Meeting', last_touchbase: 'Last Touchbase', last_payment_date: 'Last Payment Date',
+        upcoming_payment_date: 'Upcoming Payment Date', go_to_person: 'Go to Guy for the Account', contract_link: 'Contract', sla_commitment: 'SLA commitment',
+        support_commitment: 'Support Commitment', input_protocol: 'Input protocol', output_protocol: 'Output protocol', engagement: 'Level of Engagement',
+        metabase: 'Metabase Tracker', agreement_date: 'Agreement Date', contract_expiry: 'Contract expiry date', remarks: 'Remarks',
+      };
+      const idx = Object.fromEntries(Object.entries(MAP).map(([k, h]) => [k, head.indexOf(h)]));
+      const out = rows.slice(1).filter((r) => (r[idx.account] || '').trim()).map((r) =>
+        Object.fromEntries(Object.keys(MAP).map((k) => [k, idx[k] >= 0 ? (r[idx[k]] || '').trim() : ''])));
+      return { columns: Object.keys(MAP), rows: out, meta: [{ label: 'File', value: a.title || '' }, { label: 'Tab', value: 'Master Sheet (first tab)' }] };
+    },
+  });
+
+  dash.calc('account_intel', {
+    inputs: ['induction', 'rag_sheet'],
+    title: 'Account intel',
+    description: 'Partner Induction Sheet accounts matched to RAG Dashboard partner names (any “/”-separated alias), with issue and payment flags, expansion confidence as a number and dollar-denominated opportunity values parsed.',
+    fn: (induction, rag_sheet) => {
+      const norm = (x) => String(x || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const names = new Map(rag_sheet.map((r) => [norm(r.partner), r.partner]));
+      return induction.map((r) => {
+        const match = r.account.split('/').map((x) => names.get(norm(x.replace(/account in system:.*/i, '')))).find(Boolean);
+        const ov = r.opportunity_value;
+        const usdM = ov.match(/^\$\s*([\d,]+(?:\.\d+)?)/);
+        const conf = r.expansion_confidence.match(/^(\d+(?:\.\d+)?)\s*%?/);
+        return {
+          ...r,
+          partner: match || r.account,
+          matched: !!match,
+          has_issue: !!r.current_issue && !/^no issues?$/i.test(r.current_issue),
+          payment_due_flag: /^yes/i.test(r.payment_due),
+          confidence_pct: conf ? Number(conf[1]) / 100 : null,
+          opp_value_usd: usdM ? Number(usdM[1].replace(/,/g, '')) : null,
+          opp_value_other: !usdM && ov ? ov : '',
+          issue_summary: (() => {
+            if (!r.current_issue || /^no issues?$/i.test(r.current_issue)) return '';
+            const first = (r.issue_detail.split('\n').map((x) => x.trim()).find(Boolean) || '').replace(/^problem statement:\s*/i, '');
+            const d = first && first.toLowerCase() !== r.current_issue.toLowerCase() ? ' — ' + (first.length > 140 ? first.slice(0, 137) + '…' : first) : '';
+            return r.current_issue + d;
+          })(),
+          opportunity_summary: (() => {
+            if (!r.opportunity) return '';
+            if (/^other$/i.test(r.opportunity) && !ov) return r.opportunity_detail.trim() && r.opportunity_detail.trim().length <= 140 ? r.opportunity_detail.trim() : '';
+            const bits = [ov && ov, r.expansion_confidence && /\d/.test(r.expansion_confidence) && /%/.test(r.expansion_confidence) ? r.expansion_confidence + ' confidence' : ''].filter(Boolean);
+            const lines = r.opportunity_detail.split('\n').map((x) => x.trim()).filter(Boolean);
+            const det = (lines.find((x) => /^opportunity:/i.test(x)) || (lines.length === 1 && lines[0].length <= 140 ? lines[0] : '')).replace(/^opportunity:\s*/i, '');
+            return r.opportunity + (bits.length ? ' (' + bits.join(', ') + ')' : '') + (det ? ' — ' + det : '');
+          })(),
+        };
+      });
+    },
+  });
+
   dash.calc('partner_master', {
-    inputs: ['rag_sheet', 'ond_sheet', 'partner_research', 'rooftops'],
+    inputs: ['rag_sheet', 'ond_sheet', 'partner_research', 'rooftops', 'account_intel'],
     title: 'Partner list with cross-sell scope',
-    description: 'RAG Dashboard partners joined to October MRR, Partner Data rooftops and offerings, and website research. Smartview VDP agent is in scope for any client on Studio or with a marketing offering (High = they run dealer websites, Medium = marketing or website-adjacent, Base = Studio only). Client-level agents (Smartview, sales outbound, acquisition) are listed once per client; 360 and video upsells only on Studio rows where not live.',
-    fn: (rag_sheet, ond_sheet, partner_research, rooftops) => {
+    description: 'RAG Dashboard partners with September or October MRR (partners at $0 in both, or missing from the OND sheet, are left out), joined to October MRR, Partner Data rooftops and offerings, and website research. Smartview VDP agent is in scope for any client on Studio or with a marketing offering (High = they run dealer websites, Medium = marketing or website-adjacent, Base = Studio only). Client-level agents (Smartview, sales outbound, acquisition) are listed once per client; 360 and video upsells only on Studio rows where not live.',
+    fn: (rag_sheet, ond_sheet, partner_research, rooftops, account_intel) => {
+      const intel = new Map(account_intel.filter((r) => r.matched).map((r) => [r.partner, r]));
       const ond = new Map(ond_sheet.map((r) => [r.partner, r]));
+      const active = (o) => !!o && (Math.abs(o.sep_mrr || 0) >= 0.5 || Math.abs(o.oct_predicted || 0) >= 0.5);
+      rag_sheet = rag_sheet.filter((r) => active(ond.get(r.partner)));
       const norm = (x) => String(x || '').toLowerCase().replace(/[^a-z0-9]/g, '');
       const alias = { aecsolution: 'aecsolutions' };
       const rt = new Map(rooftops.map((r) => { const k = norm(r.partner); return [alias[k] || k, r]; }));
@@ -519,7 +610,7 @@
         const studio = /studio/i.test(r.product);
         const vini = /vini/i.test(r.product);
         const clientStudio = rs.some((x) => /studio/i.test(x.product));
-        const clientMarketing = rs.some((x) => rtOf(x.partner).offers_marketing);
+        const clientMarketing = rs.some((x) => rtOf(x.partner).offers_marketing || (res.get(x.partner) || {}).marketing);
         const clientWeb = rs.some((x) => /^(yes|vdp|feeds|exports)/i.test((res.get(x.partner) || {}).website_services || ''));
         const clientWebHigh = rs.some((x) => (res.get(x.partner) || {}).smartview_priority === 'High');
         const svScope = clientStudio || clientMarketing;
@@ -533,10 +624,12 @@
           studio && !r.spin360_live && '360 upsell',
           studio && !r.video_live && 'Video upsell',
         ].filter(Boolean);
-        const remark = r.expansion_remarks === '-' ? '' : r.expansion_remarks;
+        const ix = intel.get(r.partner) || {};
+        const remark = [r.expansion_remarks === '-' ? '' : r.expansion_remarks, ix.opportunity_summary ? 'Induction sheet: ' + ix.opportunity_summary : ''].filter(Boolean).join('\n');
         const pitched = [/image/i.test(remark) && 'Images', /360/.test(remark) && '360 spin', /video/i.test(remark) && 'Video', /vini/i.test(remark) && 'Vini AI'].filter(Boolean);
         const offers = [
           /^yes/i.test(w.website_services || '') && 'Websites',
+          w.marketing && !t.offers_marketing && 'Marketing',
           t.offers_marketing && 'Marketing', t.offers_ims && 'IMS', t.offers_dms && 'DMS',
           t.offers_photography && 'Photography', t.offers_refurbishment && 'Recon', t.offers_ai_chat && 'AI / chat',
         ].filter(Boolean);
@@ -614,12 +707,16 @@
   });
 
   dash.calc('partner_actions', {
-    inputs: ['ond_sheet'],
+    inputs: ['ond_sheet', 'account_intel'],
     title: 'Partner blockers and cross-sell',
-    description: 'One row per partner: October forecast, change on September, blockers/levers text and cross-sell opportunity.',
-    fn: (ond_sheet) => ond_sheet.map((r) => {
-      const bl = r.blockers_levers === '-' ? '' : r.blockers_levers;
-      const cross = [r.cross_sell_product, r.expansion_remarks].filter((x) => x && x !== '-' && x !== '—').join(' · ');
+    description: 'One row per partner with September or October MRR: October forecast, change on September, blockers/levers text and cross-sell opportunity; for partners in the Partner Induction Sheet, its current issue is added as a blocker and its quantified opportunity to the cross-sell note.',
+    fn: (ond_sheet, account_intel) => {
+      const intel = new Map(account_intel.filter((x) => x.matched).map((x) => [x.partner, x]));
+      const active = (o) => !!o && (Math.abs(o.sep_mrr || 0) >= 0.5 || Math.abs(o.oct_predicted || 0) >= 0.5);
+      return ond_sheet.filter(active).map((r) => {
+      const ix = intel.get(r.partner) || {};
+      const bl = [r.blockers_levers === '-' ? '' : r.blockers_levers, ix.issue_summary ? 'Blocker: ' + ix.issue_summary + ' (induction sheet)' : ''].filter(Boolean).join('\n');
+      const cross = [r.cross_sell_product, r.expansion_remarks, ix.opportunity_summary ? 'Induction sheet: ' + ix.opportunity_summary : ''].filter((x) => x && x !== '-' && x !== '—').join(' · ');
       return {
         partner: r.partner,
         oct_predicted: r.oct_predicted,
@@ -627,10 +724,11 @@
         blockers_levers: bl,
         has_blocker: /blocker\s*:/i.test(bl),
         has_lever: /(lever|potential opp)\s*:/i.test(bl),
-        expansion: /^yes$/i.test(r.expansion_opportunity) ? 'Yes' : /^no$/i.test(r.expansion_opportunity) ? 'No' : '',
+        expansion: /^yes$/i.test(r.expansion_opportunity) || ix.opp_value_usd != null || ix.opp_value_other ? 'Yes' : /^no$/i.test(r.expansion_opportunity) ? 'No' : '',
         cross_sell: cross,
       };
-    }),
+    });
+    },
   });
 
   dash.calc('action_counts', {
@@ -685,6 +783,7 @@
       const c = () => tr.insertCell();
       const n = c(); n.className = 'name';
       n.append(document.createTextNode(r.partner));
+
       if (r.website || r.what_they_do) {
         const sub = document.createElement('span'); sub.className = 'mrr-sub2';
         sub.textContent = [r.website && r.website !== '—' ? r.website : '', r.what_they_do].filter(Boolean).join(' — ');
@@ -876,7 +975,7 @@
         if (f === 'partner') td.className = 'name';
         const v = f === 'upsells' ? (r.open_scope || '').split(', ').filter((x) => /upsell/.test(x)).join(', ') : r[f];
         fmtCell(td, v, kind, r);
-        if (kind === 'bl' || ['smartview_bundle', 'partner_offers', 'cross_sell', 'live_products'].includes(f)) td.classList.add('txt');
+        if (kind === 'bl' || ['smartview_bundle', 'partner_offers', 'cross_sell', 'live_products', 'sheet_remark'].includes(f)) td.classList.add('txt');
       });
     });
     if (spec.total && rows.length) {
@@ -901,6 +1000,7 @@
     card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
   });
 
+
   dash.onData(() => {
     const k = dash.data('action_counts');
     const kr = k.status === 'ok' && k.data && k.data[0];
@@ -920,6 +1020,7 @@
 
     drawPartners();
     drawDrill();
+
     fillMarks(pmarks, 'partner_counts', (el, v, f) => { el.textContent = v == null ? '—' : f === 'sv_high_oct_mrr' ? usd(v) : f === 'rooftop_penetration' ? d3.format('.1%')(v) : d3.format(',')(v); });
     fillMarks(marks, 'mrr_summary', (el, v, f) => {
       if (f === 'partners') el.textContent = d3.format(',')(v);
@@ -928,7 +1029,6 @@
       else el.textContent = v == null ? '—' : usd(v);
     });
   });
-
   // ---- boot ----
   const b64 = (text) => { const bytes = new TextEncoder().encode(text); let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); };
   const notify = () => LISTENERS.forEach((f) => { try { f(); } catch (e) { console.error(e); } });
@@ -957,7 +1057,7 @@
   const load = async (name) => {
     try {
       const url = CONFIG[name];
-      if (!url || url.includes('PASTE_')) throw new Error('its tab number (gid) isn’t set yet. Open the sheet, click that tab, copy the number after “#gid=” in the address bar, and paste it into RAG_GID near the top of the script in index.html.');
+      if (!url || url.includes('PASTE_')) throw new Error(name === 'induction' ? 'no CSV link set in CONFIG yet.' : 'its tab number (gid) isn’t set yet. Open the sheet, click that tab, copy the number after “#gid=” in the address bar, and paste it into RAG_GID near the top of the script in index.html.');
       const res = await fetch(url + (url.includes('?') ? '&' : '?') + '_=' + Date.now(), { cache: 'no-store' });
       if (!res.ok) throw new Error('the link returned HTTP ' + res.status + '. Check it is published to the web and opens in a private browser window.');
       const text = await res.text();
@@ -965,13 +1065,13 @@
       const out = REG.loader[name].fn({ answer: { content: b64(text), title: SOURCE_NAMES[name] }, text });
       STATE[name] = { status: 'ok', data: out.rows };
     } catch (e) {
-      STATE[name] = { status: 'error', error: e.message };
-      showError(name, e.message);
+      if (name === 'induction' && /no CSV link|isn’t set/.test(e.message)) { STATE[name] = { status: 'ok', data: [] }; }
+      else { STATE[name] = { status: 'error', error: e.message }; showError(name, e.message); }
     }
     runCalcs(); notify();
   };
   runCalcs(); notify();
-  Promise.all(['ond_sheet', 'rag_sheet', 'rooftops'].map(load)).then(() => {
+  Promise.all(['ond_sheet', 'rag_sheet', 'rooftops', 'induction'].map(load)).then(() => {
     const t = document.getElementById('loaded-at');
     if (t) t.textContent = 'Loaded ' + new Date().toLocaleString();
   });
